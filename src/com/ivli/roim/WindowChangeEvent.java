@@ -16,5 +16,5 @@ public class WindowChangeEvent extends EventObject {
     ///public void setWindow() {}
     public Window getWindow() {return iWindow;}
   
-    public final Window iWindow; 
+    final Window iWindow; 
 }

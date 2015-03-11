@@ -6,12 +6,10 @@
 package com.ivli.roim;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-//import javax.swing.JFrame;
 
-//import javax.imageio.spi.IIORegistry;
-//import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
@@ -29,7 +27,6 @@ import java.awt.image.ByteLookupTable;
 import java.awt.image.LookupOp;
 import java.awt.image.AffineTransformOp;
 
-
 import org.dcm4che3.data.Attributes;
 import org.dcm4che3.image.PaletteColorModel;
 import org.dcm4che3.imageio.plugins.dcm.DicomImageReadParam;
@@ -40,40 +37,27 @@ import org.dcm4che3.tool.common.CLIUtils;
 import org.dcm4che3.util.SafeClose;
 import org.dcm4che3.io.BulkDataDescriptor;
 
-import java.io.FileInputStream;
+import org.apache.log4j.Logger;
+import org.apache.log4j.LogManager;
+
 
 public class SourceImage {
+    private static final Logger logger = LogManager.getLogger(SourceImage.class);
     
     private BufferedImage iImg;
-    private ImageReader iReader = ImageIO.getImageReadersByFormatName("DICOM").next();
-    private int iIndex = 0;
+    private final ImageReader iReader = ImageIO.getImageReadersByFormatName("DICOM").next();
+    private int    iIndex = 0;
     private double iMin;
     private double iMax;
     private String iFile;
     
-    SourceImage (){}
+    //SourceImage (){}
     
-    void open(String aFile) throws IOException {
-       
-        
-    /*          */
-        try {
-            DicomInputStream is = new DicomInputStream(new FileInputStream(new File(aFile)));
-            ImageInputStream iis = ImageIO.createImageInputStream(new File(aFile));
-            
-            try {
-                is.readDataset(-1, -1);
-                
-                iReader.setInput(iis);
-                int n = iReader.getNumImages(false);
-                System.out.printf("-->Number of images = %d", n);
-            } finally {
-                is.close();
-            }
-
-        } catch (Exception e) {
-        e.printStackTrace();
-        }        
+    void open(String aFile) throws IOException {      
+        //DicomInputStream is = new DicomInputStream(new FileInputStream(new File(aFile)));
+        ImageInputStream iis = ImageIO.createImageInputStream(new File(aFile));
+        iReader.setInput(iis);       
+        logger.info("-->Number of images = " + iReader.getNumImages(false));
     }
     
     boolean isSigned() {return false;} ///TODO
@@ -110,8 +94,7 @@ public class SourceImage {
                 iMin = min; iMax = max;
                 return img;
             } catch (Exception e) {   
-                System.out.println(e.getLocalizedMessage());
-                       
+                System.out.println(e.getLocalizedMessage());                       
             }
         return null;
     }

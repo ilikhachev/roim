@@ -48,26 +48,23 @@ import org.apache.log4j.BasicConfigurator;
 
 public class NewJFrame extends javax.swing.JFrame implements WindowChangeListener {
 
-    private ImageReader imageReader;
+  //  private ImageReader imageReader;
             
     
-    static Logger  logger = Logger.getLogger(NewJFrame.class);
-
-   
+    private final static Logger logger = Logger.getLogger(NewJFrame.class);
+ 
     
     public NewJFrame() { 
         
        BasicConfigurator.configure();
 
-     logger.info("Entering application.");
-
-   
+        logger.info("Entering application.");
 
         initComponents();
         ImageReader ir;
         
         try {
-        imageReader = ImageIO.getImageReadersByFormatName("DICOM").next();
+     //   imageReader = ImageIO.getImageReadersByFormatName("DICOM").next();
         } catch (NoSuchElementException e) {
           //IIORegistry registry = IIORegistry.getDefaultInstance();
           ///registry.registerServiceProvider(new org.dcm4che3.imageio.plugins.dcm.DicomImageWriterSpi());
@@ -261,39 +258,26 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
      
     
     
-    private void openImage() throws IOException {   
+    private void openImage(String aF) throws IOException {   
+        String dicomFileName;
+        if (!aF.isEmpty()) {
+            dicomFileName = aF;
+        } else {
         FileDialog fd = new FileDialog(this, "Choose a file", FileDialog.LOAD);
         fd.setDirectory("D:\\images\\");
         fd.setFile("*.dcm");
         fd.setVisible(true);
-        /*        
-        try {
-            ImageInputStream iis = ImageIO.createImageInputStream( new File(fd.getDirectory() + fd.getFile())); 
-            imageReader.setInput(iis);
-            BufferedImage img = imageReader.read( 0 );
-            //System.out.printf("test %o", img);
-        } catch (Exception e) {
-                //try { iis.close(); } catch (IOException ignore) {}
+               
+        if (null != fd.getFile()) 
+            dicomFileName = fd.getDirectory() + fd.getFile(); 
+        else
+            return;
         }
-    */
-
         
-        if (null != fd.getFile()) {
-       
-        String dicomFileName = fd.getDirectory() + fd.getFile(); 
-        /*
-        File file = FileUtilities.getFileFromNameInsensitiveToCaseIfNecessary(dicomFileName);
-        
-        dicomFileName = file.getAbsolutePath();		
-        DicomInputStream i = new DicomInputStream(file);
-        AttributeList list = new AttributeList();
-        list.read(i);
-        i.close();
-        */
-        SourceImage sImg = new SourceImage();//list);       
+        //SourceImage sImg = new SourceImage();//list);       
 
-        sImg.open(dicomFileName);
-	iPanel = new ImagePanel(sImg);
+        //sImg.open(dicomFileName);
+	iPanel = new JMedImagePane(dicomFileName);
         
         jPanel1.removeAll();
         jPanel1.add(iPanel);
@@ -302,9 +286,8 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
         
         iPanel.addWindowChangeListener(this);
         
-        int max = (int)iPanel.getMaximum();
-        int min = (int)iPanel.getMinimum();
-        
+        final int max = (int)iPanel.getMaximum();
+        final int min = (int)iPanel.getMinimum();
         
         jSlider1.setMinimum(min);
         jSlider1.setMaximum(max);
@@ -322,14 +305,13 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
         lut.setSize(jPanel2.getSize());
         iPanel.addWindowChangeListener(lut);
         jPanel2.add(lut);
-        
-        }
+       
     }
     
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
         // TODO add your handling code here:
         try {
-            openImage();
+            openImage("d:\\images\\pop.dcm");
         }
         catch (IOException e) {
             System.err.println("-->shit " + e.getLocalizedMessage());
@@ -361,7 +343,7 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
 //System.err.println("SingleImagePanel.deconstructAllSingleImagePanelsInContainer(): deconstructing old SingleImagePanels components.length="+components.length);
             for (int i=0; i<components.length; ++i) {
                 Component component = components[i];
-                if (component instanceof ImagePanel) {     
+                if (component instanceof JMedImagePane) {     
                         //((ImagePanel)component).setColorModel(cm);
                         jPanel1.repaint();
                         System.err.print("LUT changed \n");
@@ -372,8 +354,8 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
 
     private void jSlider1StateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_jSlider1StateChanged
         for (Component c : jPanel1.getComponents()) {	
-            if (c instanceof ImagePanel) {     
-                ((ImagePanel)c).setWindow( new Window(jSlider1.getValue(), ((ImagePanel)c).getWindow().getWidth()));
+            if (c instanceof JMedImagePane) {     
+                ((JMedImagePane)c).setWindow( new Window(jSlider1.getValue(), ((JMedImagePane)c).getWindow().getWidth()));
                 jPanel1.repaint();
             }
         }
@@ -381,8 +363,8 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
 
     private void jSlider2StateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_jSlider2StateChanged
         for (Component c : jPanel1.getComponents()) {	
-            if (c instanceof ImagePanel) {     
-                ((ImagePanel)c).setWindow(new Window(((ImagePanel)c).getWindow().getLevel(), jSlider2.getValue()));
+            if (c instanceof JMedImagePane) {     
+                ((JMedImagePane)c).setWindow(new Window(((JMedImagePane)c).getWindow().getLevel(), jSlider2.getValue()));
                 jPanel1.repaint();
             }
         }
@@ -390,8 +372,8 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
 
     private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
         for (Component c : jPanel1.getComponents()) {	
-            if (c instanceof ImagePanel) {     
-                ((ImagePanel)c).setInverted(jCheckBox1.isSelected());
+            if (c instanceof JMedImagePane) {     
+                ((JMedImagePane)c).setInverted(jCheckBox1.isSelected());
                 jPanel1.repaint();
             }
         }
@@ -399,8 +381,8 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
 
     private void jRadioButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButton1ActionPerformed
         for (Component c : jPanel1.getComponents()) {	
-            if (c instanceof ImagePanel) {     
-                ((ImagePanel)c).setLinear(true);
+            if (c instanceof JMedImagePane) {     
+                ((JMedImagePane)c).setLinear(true);
                 jPanel1.repaint();
             }
         }
@@ -408,8 +390,8 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
 
     private void jRadioButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButton2ActionPerformed
       for (Component c : jPanel1.getComponents()) {	
-            if (c instanceof ImagePanel) {     
-                ((ImagePanel)c).setLinear(false);
+            if (c instanceof JMedImagePane) {     
+                ((JMedImagePane)c).setLinear(false);
                 jPanel1.repaint();
             }
         }
@@ -450,7 +432,7 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
         });
     }
     
-    private ImagePanel iPanel = null;
+    private JMedImagePane iPanel = null;
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.ButtonGroup buttonGroup1;

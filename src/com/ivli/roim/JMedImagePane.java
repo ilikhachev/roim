@@ -23,17 +23,21 @@ import javax.swing.SwingUtilities;
 import javax.swing.JPopupMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JMenu;        
-
+import java.io.IOException;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.HashSet;
 
-//import com.pixelmed.display.SourceImage;
+
 
 import java.awt.geom.Ellipse2D;
 import java.awt.Rectangle;
 
-public class ImagePanel extends JComponent {
+import org.apache.log4j.Logger;
+import org.apache.log4j.LogManager;
+
+
+public class JMedImagePane extends JComponent {
 
         final static private boolean DRAW_OVERLAYS_ON_BUFFERED_IMAGE = false; //i cry ther's no #ifdef 
         final static private double DEFAULT_ELLIPSE_WIDTH  = 3.;
@@ -42,7 +46,7 @@ public class ImagePanel extends JComponent {
         final static private double DEFAULT_SCALE_Y = 1.;
         
         
-	
+	private static final Logger logger = LogManager.getLogger(JMedImagePane.class);
                 
         class  WindowMgmt  {
             private LookupOp            iLok = null;
@@ -64,7 +68,8 @@ public class ImagePanel extends JComponent {
             public void    setTransform (PValueTransform aPVt) {iPVt = aPVt;}     
             
             public Window getWindow() {return iWin;}
-            public void   setWindow (Window aW) {
+            
+            public void setWindow (Window aW) {
                     if (!iWin.equals(aW)) {
                         iWin = aW; 
                         makeLUT();
@@ -83,6 +88,7 @@ public class ImagePanel extends JComponent {
                         notifyWindowChanged(iWin);
                     }
                 }
+            
             public boolean isLinear() {return true!=iLog;}
             public void    setLinear(boolean aL) {
                         if (iLog != aL) {
@@ -171,7 +177,7 @@ public class ImagePanel extends JComponent {
             return iWM.transform(aI);
         }
                 
-        HashSet<WindowChangeListener> iWinListeners = new HashSet();
+        private final HashSet<WindowChangeListener> iWinListeners = new HashSet();
         
         public void addWindowChangeListener(WindowChangeListener aL) {
             iWinListeners.add(aL);
@@ -198,7 +204,12 @@ public class ImagePanel extends JComponent {
             
             iRoi.add(aR.createTransformedROI(trans));
         }
-         
+
+        public void cloneRoi(ROI aR) {
+                    iRoi.add(new ROI(aR));
+                
+        }
+        
         private Rectangle point2shape(Point aP) {
             Rectangle r = new Rectangle(aP.x, aP.y, 3, 3);
             AffineTransform trans = AffineTransform.getTranslateInstance(iOrigin.x, iOrigin.y); 
@@ -220,15 +231,12 @@ public class ImagePanel extends JComponent {
         }
         
         ROI deleteRoi(ROI aR) {           
-        if (!iRoi.remove(aR))
+            if (iRoi.remove(aR)) {
+                AffineTransform trans = AffineTransform.getTranslateInstance(iOrigin.x, iOrigin.y); 
+                trans.concatenate(iZoom);  
+                return aR.createTransformedROI(trans); 
+            }
             return null;
-        else {
-            AffineTransform trans = AffineTransform.getTranslateInstance(iOrigin.x, iOrigin.y); 
-            trans.concatenate(iZoom);  
-            ROI ret = aR.createTransformedROI(trans); 
-            
-           return ret;
-        }
         }
         
         public Window getWindow() {return iWM.getWindow();}
@@ -245,19 +253,20 @@ public class ImagePanel extends JComponent {
         double  getMinimum() {return iImg.getMinimum();}
         double  getMaximum() {return iImg.getMaximum();}    
        
-        
-        
-        
-	public ImagePanel(SourceImage anImg){
-            iImg = anImg;
-            iImg.getBufferedImage(0);
-             
+        public JMedImagePane(String aFileName) throws IOException {
+            iImg = new SourceImage();      
+            iImg.open(aFileName);
+            iImg.getBufferedImage(0);             
             iController = new Controller(this);
-            
-            
+            }
+        
+	public JMedImagePane(SourceImage anImg) {
+            iImg = anImg;
+            iImg.getBufferedImage(0);             
+            iController = new Controller(this);
             }
    
-    AffineTransform iZoom   = AffineTransform.getScaleInstance(1.0, 1.0);
+    AffineTransform iZoom   = AffineTransform.getScaleInstance(DEFAULT_SCALE_X, DEFAULT_SCALE_Y);
     Point           iOrigin = new Point(0,0);    
     BufferedImage   iBuf    = null;
         

@@ -20,11 +20,11 @@ import javax.swing.JComponent;
  */
 public class LutPanel extends JComponent implements WindowChangeListener {
     
-   ImagePanel    iPanel = null; 
+   JMedImagePane    iPanel = null; 
    BufferedImage iBuf = null;
  
    private LutPanel(){}
-   public LutPanel(ImagePanel aP) {iPanel = aP;}
+   public LutPanel(JMedImagePane aP) {iPanel = aP;}
            
            
    public void setSize(Dimension d) {

@@ -44,8 +44,7 @@ public class Window implements Serializable, Cloneable {
                 setWidth(getWidth() + delta);
                 setLevel(getLevel() + delta / 2.);
             }
-                      
-            
+                                  
             public final boolean inside(double aV) {return aV > getBottom() && aV < getTop();}
                     
             public final boolean equals(Window aW) {

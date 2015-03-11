@@ -12,6 +12,7 @@ import java.awt.Transparency;
 import java.awt.color.ColorSpace;
 import java.awt.geom.AffineTransform;
 import java.awt.Shape;
+import java.awt.Rectangle;
 import java.awt.Cursor;
 import java.awt.image.ComponentColorModel;
 import java.awt.image.DataBuffer;
@@ -22,6 +23,7 @@ import java.awt.image.AffineTransformOp;
 import java.awt.RenderingHints;
 
 import java.awt.Point;
+import java.awt.geom.Rectangle2D;
 import java.awt.event.*;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
@@ -37,18 +39,23 @@ import java.awt.Color;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
 
+import org.apache.log4j.Logger;
+import org.apache.log4j.LogManager;
 /**
  *
  * @author likhachev
  */
- 
+        
 class Controller implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener, ActionListener, WindowChangeListener {
+    private static final Logger logger = LogManager.getLogger(Controller.class);
+    
     static final int MOUSE_ACTION_NONE   =  00;
     static final int MOUSE_ACTION_SELECT =  01;
     static final int MOUSE_ACTION_ZOOM   =  02;
     static final int MOUSE_ACTION_PAN    =  03;
     static final int MOUSE_ACTION_WINDOW =  04;
     static final int MOUSE_ACTION_LIST   =  05;
+    static final int MOUSE_ACTION_WHEEL  =  15;
     static final int MOUSE_ACTION_TOOL   = 100;
     static final int MOUSE_ACTION_MENU   = 200;
     static final int MOUSE_ACTION_ROI    = 500;
@@ -64,20 +71,15 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
         protected int iY;
 
         public ActionItem(int aX, int aY){iX = aX; iY = aY;}
-        public ActionItem release(){return null;}
+        public final ActionItem release(int aX, int aY) {if (!DoRelease(aX, aY)) return null; else return this;}
 
         public final void action(int aX, int aY) {
-            DoAction(aX, aY); iX = aX; iY = aY;
-            }
+                        DoAction(aX, aY); iX = aX; iY = aY;
+                    }
         
-        //public final void wheel(int aX) {
-          //  DoWheel(aX);
-           // }
-        
-        //public final void right(int aX, int aY) {
-        //    DoRight(aX, aY); iX = aX; iY = aY;
-        //    }
-        
+        public final void action(int aX) {
+                        DoWheelAction(aX);
+                    }     
         public final void paint(Graphics gc) {
                         Color oc = gc.getColor();
                         gc.setColor(ACTIVE_ROI_COLOR);
@@ -86,9 +88,10 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
                     }
 
         protected abstract void DoAction(int aX, int aY); 
-       // protected  void DoRight(int aX, int aY) {} 
-       // protected  void DoWheel(int aX) {iControlled.zoom(aX/10.0, 0, 0);} 
-        protected  void DoPaint(Graphics2D aGC) {}
+        protected void DoWheelAction(int aX) {iControlled.zoom(-aX/10.0, 0, 0);}
+        // return true if action shall be continued
+        protected boolean DoRelease(int aX, int aY) {return false;}
+        protected void DoPaint(Graphics2D aGC) {}
     }
 
     ActionItem NewAction(int aType, int aX, int aY) {
@@ -104,26 +107,31 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
                 return new ActionItem(aX, aY) {public void DoAction(int aX, int aY){
                                                            iControlled.pan(aX-iX, aY-iY);
                 }};  
+            case MOUSE_ACTION_WHEEL: return new ActionItem(aX, aY) {public void DoAction(int aX, int aY) {
+                                                  iControlled.zoom(aX/10.0, 0, 0);
+                                                  }} ; 
             case MOUSE_ACTION_ROI: 
             case MOUSE_ACTION_MENU:
             case MOUSE_ACTION_NONE:
             default: return new ActionItem(aX, aY) {public void DoAction(int aX, int aY){}};      
         }
+        
     }
-
+    
+    
     private ActionItem iButton = null;
-    private ActionItem iWheel  = new ActionItem(0,0) {public void DoAction(int aX, int aY) {
-                                                                  iControlled.zoom(aX/10.0, 0, 0);
-                                                       }} ;
-    ImagePanel iControlled = null;
-
-    public Controller(ImagePanel aC) {
+    private ActionItem iWheel  = null;  
+    private ROI        iSelected   = null;
+    private JMedImagePane iControlled = null;
+    
+    
+    public Controller(JMedImagePane aC) {
         iControlled = aC;
+        iWheel = NewAction(MOUSE_ACTION_WHEEL, 0, 0);
         register();
-//        iButton = NewAction()
     }
 
-    public final void register() {
+    private final void register() {
         iControlled.addMouseListener(this);
         iControlled.addMouseMotionListener(this);
         iControlled.addMouseWheelListener(this);
@@ -138,17 +146,18 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     }
 
     public void mouseWheelMoved(MouseWheelEvent e) {                         
-        iWheel.action(e.getWheelRotation(), 0);
+        iWheel.action(e.getWheelRotation());
     }
 
     public void mouseClicked(MouseEvent e) {
-        if (null != iSelected) {
-        
-        } else if (SwingUtilities.isRightMouseButton(e)) {
-            showPopupMenu_Roi(e.getX(), e.getY());
+        if (SwingUtilities.isRightMouseButton(e)) {
+            if (null != (iSelected = iControlled.findRoi(e.getPoint()))) 
+                showPopupMenu_Roi(e.getX(), e.getY());
+            else 
+                showPopupMenu_Context(e.getX(), e.getY());
         }
     }
-
+    
     public void mouseDragged(MouseEvent e) {
         if (null != iButton) 
             iButton.action(e.getX(), e.getY());
@@ -159,8 +168,22 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
             iButton.action(e.getX(), e.getY());
          //   return;
         }
-        else if (null != iSelected) {
-        
+        else if (null != iSelected) {  // move ROI
+            //iControlled.deleteRoi(iSelected);
+            iButton = new ActionItem(e.getX(), e.getY()) {
+                protected void DoAction(int aX, int aY) {
+                    AffineTransform tmp = AffineTransform.getTranslateInstance(aX-iX, aY-iY);
+                    Rectangle2D old = iSelected.iShape.getBounds2D();
+                    iSelected.iShape = tmp.createTransformedShape(iSelected.iShape);
+                    iControlled.repaint();//old.createIntersection(iSelected.iShape.getBounds2D())); 
+                }    
+              protected boolean DoRelease(int aX, int aY) {
+                   // iControlled.addRoi(iSelected);
+                    iSelected = null;
+                    iControlled.repaint();
+                    return false;
+                  }  
+            };
         } 
         else if (SwingUtilities.isLeftMouseButton(e)) {
             iButton = NewAction(iLeftAction, e.getX(), e.getY());
@@ -175,16 +198,12 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     }
 
     public void mouseReleased(MouseEvent e) {
-        iButton = null != iButton ? iButton.release() : null;               
+        iButton = null != iButton ? iButton.release(e.getX(), e.getY()) : null;               
     }
 
-    private ROI iSelected = null;
-    
     public void mouseMoved(MouseEvent e) {   
         iSelected = iControlled.findRoi(e.getPoint());
         if (null != iSelected) {
-            //ROI r = iControlled.deleteRoi(e.getPoint());
-            System.out.println("Found ROI");
             iControlled.setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
             // iSelected = tmp;
         } else {
@@ -227,9 +246,14 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     private static final String KCommandRoiRect = "COMMAND_ROI_CREATE_RECT"; //$NON-NLS-1$ 
     private static final String KCommandRoiOval = "COMMAND_ROI_CREATE_OVAL"; //$NON-NLS-1$
     private static final String KCommandRoiFree = "COMMAND_ROI_CREATE_FREE"; //$NON-NLS-1$
+    private static final String KCommandRoiCreate = "COMMAND_ROI_OPERATIONS_CREATE"; //$NON-NLS-1$
+    private static final String KCommandRoiDelete = "COMMAND_ROI_OPERATIONS_DELETE"; //$NON-NLS-1$
+    private static final String KCommandRoiMove   = "COMMAND_ROI_OPERATIONS_MOVE"; //$NON-NLS-1$
+    private static final String KCommandRoiClone  = "COMMAND_ROI_OPERATIONS_CLONE"; //$NON-NLS-1$
+    
 
     public void actionPerformed(ActionEvent e) {
-        System.out.printf("\n-->action, " + e.getActionCommand() + " ," + e.paramString());
+        logger.info("-->action, " + e.getActionCommand() + " ," + e.paramString() + "\n");
         switch (e.getActionCommand()) {
             case KCommandRoiRect: 
                     iButton  = new ActionItem(-1, -1) {                           
@@ -244,15 +268,15 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
                         iControlled.repaint(iPath.getBounds()); 
                     }
 
-                    public ActionItem release() {
+                    public boolean DoRelease(int aX, int aY) {
                         if (first < 4)
-                            return this;
+                            return true;
                         else {
                             iPath.closePath();
                             iControlled.addRoi(new ROI(iPath));
                             iControlled.repaint();
                         }
-                        return null;
+                        return false;
                     }
                     public void DoPaint(Graphics2D gc) {
                         gc.draw(iPath);
@@ -292,6 +316,21 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
                     }
                 }; break;
             case KCommandRoiFree: break;
+            case KCommandRoiDelete: 
+                iControlled.deleteRoi(iSelected); 
+                iSelected = null; 
+                iControlled.repaint(); break;
+            case KCommandRoiMove: break;
+            case KCommandRoiClone: 
+                
+         
+                    iControlled.cloneRoi(iSelected);
+                    iControlled.repaint();
+                   
+               
+                iSelected = null;
+                
+                break;
             default: break;
         }
     }
@@ -303,7 +342,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
         }
     }
 
-    void showPopupMenu_Roi(int aX, int aY) {
+    void showPopupMenu_Context(int aX, int aY) {
         final JPopupMenu mnu = new JPopupMenu("ROI"); 
         JMenuItem mi1 = new JMenuItem("Roi ADD");
 
@@ -331,10 +370,33 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
         mnu.add(m1);
         mnu.show(iControlled, aX, aY);
     }
+    
+    void showPopupMenu_Roi(int aX, int aY) {
+        final JPopupMenu mnu = new JPopupMenu("ROI"); 
+        
+        JMenuItem mi11 = new JMenuItem("Delete");
+        mi11.addActionListener(this);
+        mi11.setActionCommand(KCommandRoiDelete);
+
+        JMenuItem mi12 = new JMenuItem("Move");
+        mi12.addActionListener(this);
+        mi12.setActionCommand(KCommandRoiMove); 
+
+        JMenuItem mi13 = new JMenuItem("Clone");
+        mi13.addActionListener(this);
+        mi13.setActionCommand(KCommandRoiClone);
+
+        mnu.add(mi11);
+        mnu.add(mi12);
+        mnu.add(mi13);
+
+        mnu.show(iControlled, aX, aY);
+    }
 
     public void paint(Graphics gc) {
         if (null != iButton) iButton.paint(gc);
         if (null != iWheel) iWheel.paint(gc);
+       /// if (null != iSelected) 
     }
 
 

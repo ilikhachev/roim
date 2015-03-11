@@ -10,17 +10,15 @@ import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.io.Serializable;
 
-class ROI implements Serializable { 
+class ROI implements Serializable {
     protected Shape  iShape;
     protected Color  iColor;
     protected String iAnnotation;
-    protected static int SCNdx = 0;
-    
-    static final Color [] iCols = new Color[]{Color.BLACK, Color.BLUE, Color.CYAN, Color.MAGENTA, Color.ORANGE, Color.RED, Color.PINK, Color.YELLOW};
-    
-    private ROI (Shape aS, Color aC) {iShape = aS; iColor = aC;}
-    ROI (Shape aS) {iShape = aS; iColor = SCNdx < iCols.length -1 ? iCols[++SCNdx] : Color.BLACK;}
-    
+         
+    ROI (Shape aS, Color aC) {iShape = aS; iColor = aC;}
+    ROI (Shape aS) {iShape = aS; iColor = Colorer.getNextColor(this);}
+    ROI (ROI aR) {iShape = aR.iShape; iColor = aR.iColor; iAnnotation = aR.iAnnotation;}
+       
     final ROI createTransformedROI(AffineTransform aT) {
         ROI self = new ROI(aT.createTransformedShape(iShape), iColor);
         self.iAnnotation = this.iAnnotation;
