@@ -300,12 +300,10 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
         jRadioButton1.setSelected(true);
         jRadioButton2.setSelected(false);
         
-        
         LutPanel lut = new LutPanel(iPanel);
         lut.setSize(jPanel2.getSize());
         iPanel.addWindowChangeListener(lut);
-        jPanel2.add(lut);
-       
+        jPanel2.add(lut);   
     }
     
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
