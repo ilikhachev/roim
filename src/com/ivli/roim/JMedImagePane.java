@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.LinkedList;
 import java.util.HashSet;
 
-
-
 import java.awt.geom.Ellipse2D;
 import java.awt.Rectangle;
 
@@ -48,7 +46,7 @@ public class JMedImagePane extends JComponent {
         
 	private static final Logger logger = LogManager.getLogger(JMedImagePane.class);
                 
-        class  WindowMgmt  {
+        class  WindowMgmt {
             private LookupOp            iLok = null;
             private ComponentColorModel iCMdl = null;
             private PValueTransform     iPVt = new PValueTransform();
@@ -67,32 +65,30 @@ public class JMedImagePane extends JComponent {
                                                 DataBuffer.TYPE_BYTE);
             }
             
-            public void setTransform (PValueTransform aPVt) {iPVt = aPVt;}     
+            public void setTransform(PValueTransform aPVt) {iPVt = aPVt;}     
             
             public Window getWindow() {return iWin;}
-            
-            
-            
+        
             public boolean isInverted() {return iInverted;}
             
             public void setInverted(boolean aI) {
-                    if (aI != isInverted()) {
-                        iInverted = aI;    
-                        makeLUT();
-                        updateBufferedImage();
-                        notifyWindowChanged(iWin);
-                    }
+                if (aI != isInverted()) {
+                    iInverted = aI;    
+                    makeLUT();
+                    updateBufferedImage();
+                    notifyWindowChanged(iWin);
                 }
+            }
             
             public boolean isLinear() {return true!=iLog;}
-            public void    setLinear(boolean aL) {
-                        if (iLog != aL) {
-                            iLog = aL; 
-                            makeLUT();
-                            updateBufferedImage();
-                            notifyWindowChanged(iWin);
-                        }
-                    }
+            public void setLinear(boolean aL) {
+                if (iLog != aL) {
+                    iLog = aL; 
+                    makeLUT();
+                    updateBufferedImage();
+                    notifyWindowChanged(iWin);
+                }
+            }
             
             private class LutBuffer {
                 byte [] bytes = null;
@@ -183,7 +179,7 @@ public class JMedImagePane extends JComponent {
                 l.windowChanged(new WindowChangeEvent(this, aW));
             }
                 
-        private SourceImage iImg = null;
+        private MedImage2D iImg = null;
         private Controller  iController = null;
         private WindowMgmt  iWM  = null; //new WindowMgmt();
         private List<ROI>   iRoi = new LinkedList();
@@ -201,8 +197,7 @@ public class JMedImagePane extends JComponent {
         }
 
         public void cloneRoi(ROI aR) {
-                    iRoi.add(new ROI(aR));
-                
+            iRoi.add(new ROI(aR));        
         }
         
         private Rectangle point2shape(Point aP) {
@@ -237,13 +232,13 @@ public class JMedImagePane extends JComponent {
         public Window getWindow() {return iWM.getWindow();}
               
         public void setWindow (Window aW) {
-                    if (!iWM.getWindow().equals(aW)) {
-                        iWM.getWindow().setWindow(aW.getLevel(), aW.getWidth()); 
-                        iWM.makeLUT();
-                        updateBufferedImage();
-                        notifyWindowChanged(aW);
-                    }
-                }
+            if (!iWM.getWindow().equals(aW)) {
+                iWM.getWindow().setWindow(aW.getLevel(), aW.getWidth()); 
+                iWM.makeLUT();
+                updateBufferedImage();
+                notifyWindowChanged(aW);
+            }
+        }
                 /**Git tets **/
         boolean isInverted() {return iWM.isInverted();}
         void    setInverted(boolean aI) {iWM.setInverted(aI);} 
@@ -253,14 +248,14 @@ public class JMedImagePane extends JComponent {
         double  getMaximum() {return iImg.getMaximum();}    
        
         public JMedImagePane(String aFileName) throws IOException {
-            iImg = new SourceImage();      
+            iImg = new MedImage2D();      
             iImg.open(aFileName);
             iImg.getBufferedImage(0);  
             iWM = new WindowMgmt(new Window(getMinimum(), getMaximum()));
             iController = new Controller(this);
             }
         
-	public JMedImagePane(SourceImage anImg) {
+	public JMedImagePane(MedImage2D anImg) {
             iImg = anImg;
             iImg.getBufferedImage(0);   
             iWM = new WindowMgmt(new Window(getMinimum(), getMaximum()));
