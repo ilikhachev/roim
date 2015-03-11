@@ -44,20 +44,23 @@ import org.apache.log4j.LogManager;
 public class MedImage2D {
     private static final Logger logger = LogManager.getLogger(MedImage2D.class);
     
-    private BufferedImage iImg;
-    private final ImageReader iReader = ImageIO.getImageReadersByFormatName("DICOM").next();
-    private int    iIndex = 0;
+    
+    private final  ImageReader iReader = ImageIO.getImageReadersByFormatName("DICOM").next();
+    private int    iIndex;
+    private int    iFrames;
     private double iMin;
     private double iMax;
     private String iFile;
+    private BufferedImage iImg;
     
     //SourceImage (){}
     
     void open(String aFile) throws IOException {      
         //DicomInputStream is = new DicomInputStream(new FileInputStream(new File(aFile)));
         ImageInputStream iis = ImageIO.createImageInputStream(new File(iFile = aFile));
-        iReader.setInput(iis);       
-        logger.info("-->Number of images = " + iReader.getNumImages(false));
+        iReader.setInput(iis);     
+        iFrames = iReader.getNumImages(false);
+        logger.info("-->Number of images = " + iFrames);
     }
     
     boolean isSigned() {return false;} ///TODO
@@ -67,35 +70,32 @@ public class MedImage2D {
     BufferedImage getBufferedImage() {return iImg = loadBufferedImage(iIndex = 0);}
     BufferedImage getBufferedImage(int aNdx) {return first().iImg;}        
     
-    int frames() {return 1;}
+    int getNoOfFrames() {return iFrames;}
+    
     MedImage2D first() {iImg = loadBufferedImage(iIndex = 0); return this; }
     MedImage2D next() {iImg = loadBufferedImage(iIndex = Math.min(iIndex-1, 0)); return this;}
     
     private BufferedImage loadBufferedImage(int aNdx) {
         try {          
-                BufferedImage img = iReader.read(aNdx, readParam());
-                
-                Raster r = img.getRaster();
-                double min  = 65535; 
-                double max  = 0; 
-                double temp [] = new double [r.getNumBands()];
-                
-                for (int i=0; i < r.getNumBands(); ++i) {
-                    temp[i] = 0;
+            BufferedImage img = iReader.read(aNdx, readParam());
+
+            Raster r = img.getRaster();
+            double min  = 65535; 
+            double max  = 0; 
+            double temp [] = new double [r.getNumBands()];
+
+            for (int i=0; i<r.getWidth(); ++i)
+                for (int j=0; j<r.getHeight(); ++j) {
+                    temp = r.getPixel(i, j, temp);
+                    if (temp[0] > max) max = temp[0];
+                    else if (temp[0] < min) min = temp[0];
                 }
-                    
-                for (int i=0; i<r.getWidth(); ++i)
-                    for (int j=0; j<r.getHeight(); ++j) {
-                        temp = r.getPixel(i, j, temp);
-                        if (temp[0] > max) max = temp[0];
-                        else if (temp[0] < min) min = temp[0];
-                    }
-                         
-                iMin = min; iMax = max;
-                return img;
-            } catch (Exception e) {   
-                System.out.println(e.getLocalizedMessage());                       
-            }
+
+            iMin = min; iMax = max;
+            return img;
+        } catch (Exception e) {   
+            logger.error(e);                       
+        }
         return null;
     }
     
