@@ -244,7 +244,7 @@ public class JMedImagePane extends JComponent {
                         notifyWindowChanged(aW);
                     }
                 }
-                
+                /**Git tets **/
         boolean isInverted() {return iWM.isInverted();}
         void    setInverted(boolean aI) {iWM.setInverted(aI);} 
         boolean isLinear() {return iWM.isLinear();}
