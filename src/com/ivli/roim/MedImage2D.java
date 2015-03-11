@@ -55,7 +55,7 @@ public class MedImage2D {
     
     void open(String aFile) throws IOException {      
         //DicomInputStream is = new DicomInputStream(new FileInputStream(new File(aFile)));
-        ImageInputStream iis = ImageIO.createImageInputStream(new File(aFile));
+        ImageInputStream iis = ImageIO.createImageInputStream(new File(iFile = aFile));
         iReader.setInput(iis);       
         logger.info("-->Number of images = " + iReader.getNumImages(false));
     }
@@ -68,8 +68,8 @@ public class MedImage2D {
     BufferedImage getBufferedImage(int aNdx) {return first().iImg;}        
     
     int frames() {return 1;}
-    MedImage2D first() { iImg = loadBufferedImage(iIndex = 0); return this; }
-    MedImage2D next() { iImg = loadBufferedImage(iIndex = Math.min(iIndex-1, 0)); return this;}
+    MedImage2D first() {iImg = loadBufferedImage(iIndex = 0); return this; }
+    MedImage2D next() {iImg = loadBufferedImage(iIndex = Math.min(iIndex-1, 0)); return this;}
     
     private BufferedImage loadBufferedImage(int aNdx) {
         try {          
