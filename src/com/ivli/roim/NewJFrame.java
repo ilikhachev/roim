@@ -338,7 +338,7 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
         if (null != fd.getFile() && null != (cm = LutLoader.open(fd.getDirectory() + fd.getFile())))
         {
             Component[] components = jPanel1.getComponents();				
-//System.err.println("SingleImagePanel.deconstructAllSingleImagePanelsInContainer(): deconstructing old SingleImagePanels components.length="+components.length);
+
             for (int i=0; i<components.length; ++i) {
                 Component component = components[i];
                 if (component instanceof JMedImagePane) {     

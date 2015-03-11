@@ -52,11 +52,13 @@ public class JMedImagePane extends JComponent {
             private LookupOp            iLok = null;
             private ComponentColorModel iCMdl = null;
             private PValueTransform     iPVt = new PValueTransform();
-            private Window              iWin = new Window();
+            private Window              iWin = null;//new Window();
             private boolean             iInverted = false;            
             private boolean             iLog = false;
             
-            public WindowMgmt() {
+            private WindowMgmt() {}
+            public WindowMgmt(Window aW) {
+                iWin = aW;
                 iCMdl = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY),
                                                 null, //new int[] {8},
                                                 false,		// has alpha
@@ -65,18 +67,11 @@ public class JMedImagePane extends JComponent {
                                                 DataBuffer.TYPE_BYTE);
             }
             
-            public void    setTransform (PValueTransform aPVt) {iPVt = aPVt;}     
+            public void setTransform (PValueTransform aPVt) {iPVt = aPVt;}     
             
             public Window getWindow() {return iWin;}
             
-            public void setWindow (Window aW) {
-                    if (!iWin.equals(aW)) {
-                        iWin = aW; 
-                        makeLUT();
-                        updateBufferedImage();
-                        notifyWindowChanged(aW);
-                    }
-                }
+            
             
             public boolean isInverted() {return iInverted;}
             
@@ -190,7 +185,7 @@ public class JMedImagePane extends JComponent {
                 
         private SourceImage iImg = null;
         private Controller  iController = null;
-        private WindowMgmt  iWM  = new WindowMgmt();
+        private WindowMgmt  iWM  = null; //new WindowMgmt();
         private List<ROI>   iRoi = new LinkedList();
         
         public void addRoi(ROI aR) {
@@ -241,11 +236,15 @@ public class JMedImagePane extends JComponent {
         
         public Window getWindow() {return iWM.getWindow();}
               
-        public void setWindow(Window aW) {
-                            iWM.setWindow(aW);    
-                            
-                        }
-        
+        public void setWindow (Window aW) {
+                    if (!iWM.getWindow().equals(aW)) {
+                        iWM.getWindow().setWindow(aW.getLevel(), aW.getWidth()); 
+                        iWM.makeLUT();
+                        updateBufferedImage();
+                        notifyWindowChanged(aW);
+                    }
+                }
+                
         boolean isInverted() {return iWM.isInverted();}
         void    setInverted(boolean aI) {iWM.setInverted(aI);} 
         boolean isLinear() {return iWM.isLinear();}
@@ -256,13 +255,15 @@ public class JMedImagePane extends JComponent {
         public JMedImagePane(String aFileName) throws IOException {
             iImg = new SourceImage();      
             iImg.open(aFileName);
-            iImg.getBufferedImage(0);             
+            iImg.getBufferedImage(0);  
+            iWM = new WindowMgmt(new Window(getMinimum(), getMaximum()));
             iController = new Controller(this);
             }
         
 	public JMedImagePane(SourceImage anImg) {
             iImg = anImg;
-            iImg.getBufferedImage(0);             
+            iImg.getBufferedImage(0);   
+            iWM = new WindowMgmt(new Window(getMinimum(), getMaximum()));
             iController = new Controller(this);
             }
    
