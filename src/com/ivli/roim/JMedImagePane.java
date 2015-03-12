@@ -76,7 +76,7 @@ public class JMedImagePane extends JComponent {
                     iInverted = aI;    
                     makeLUT();
                     updateBufferedImage();
-                    notifyWindowChanged(iWin);
+                    notifyWindowChanged();
                 }
             }
             
@@ -86,7 +86,7 @@ public class JMedImagePane extends JComponent {
                     iLog = aL; 
                     makeLUT();
                     updateBufferedImage();
-                    notifyWindowChanged(iWin);
+                    notifyWindowChanged();
                 }
             }
             
@@ -149,7 +149,7 @@ public class JMedImagePane extends JComponent {
             }
                         
         public final void makeLUT() {    
-                System.out.printf("--> make LUT %s, level = %.1f, width = %.3f\n", iLog ? "logarithmic":"linear", iWin.getLevel(), iWin.getWidth());
+                logger.info("make LUT " + (iLog ? "logarithmic":"linear") + ", level=" + iWin.getLevel() + ", width=" + iWin.getWidth());
                 if (iLog)
                     makeLogLUT(); 
                 else 
@@ -172,17 +172,18 @@ public class JMedImagePane extends JComponent {
         
         public void addWindowChangeListener(WindowChangeListener aL) {
             iWinListeners.add(aL);
+            aL.windowChanged(new WindowChangeEvent(this, iWM.getWindow()));
             }
         
-        private void notifyWindowChanged(Window aW) {
+        private void notifyWindowChanged(/*Window aW*/) {
             for (WindowChangeListener l:iWinListeners)
-                l.windowChanged(new WindowChangeEvent(this, aW));
+                l.windowChanged(new WindowChangeEvent(this, iWM.getWindow()));
             }
                 
-        private MedImage2D iImg = null;
-        private Controller  iController = null;
-        private WindowMgmt  iWM  = null; //new WindowMgmt();
-        private List<ROI>   iRoi = new LinkedList();
+        private final MedImage2D iImg;
+        private final Controller iController;
+        private final WindowMgmt iWM; //new WindowMgmt();
+        private final List<ROI>  iRoi = new LinkedList();
         
         public void addRoi(ROI aR) {
             AffineTransform trans = AffineTransform.getTranslateInstance(iOrigin.x, iOrigin.y); 
@@ -214,8 +215,7 @@ public class JMedImagePane extends JComponent {
         ROI findRoi(Point aP) {           
             for (ROI r:iRoi) {
                if (r.iShape.intersects(point2shape(new Point(aP.x, aP.y)))) 
-                    return r;
-                        
+                    return r;                        
             }
             return null;
         }
@@ -236,7 +236,7 @@ public class JMedImagePane extends JComponent {
                 iWM.getWindow().setWindow(aW.getLevel(), aW.getWidth()); 
                 iWM.makeLUT();
                 updateBufferedImage();
-                notifyWindowChanged(aW);
+                notifyWindowChanged();
             }
         }
                 /**Git tets **/
@@ -259,12 +259,12 @@ public class JMedImagePane extends JComponent {
             iImg = anImg;
             iImg.getBufferedImage(0);   
             iWM = new WindowMgmt(new Window(getMinimum(), getMaximum()));
-            iController = new Controller(this);
+            iController = new Controller(this);            
             }
    
     AffineTransform iZoom   = AffineTransform.getScaleInstance(DEFAULT_SCALE_X, DEFAULT_SCALE_Y);
     Point           iOrigin = new Point(0,0);    
-    BufferedImage   iBuf    = null;
+    BufferedImage   iBuf;
         
     public void zoom(double aFactor, int aX, int aY) {
         iZoom.setToScale(iZoom.getScaleX() + aFactor, iZoom.getScaleY() + aFactor);
