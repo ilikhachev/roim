@@ -286,16 +286,16 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
         
         iPanel.addWindowChangeListener(this);
         
-        final int max = (int)iPanel.getMaximum();
-        final int min = (int)iPanel.getMinimum();
+        //final int max = (int)iPanel.getMaximum();
+        //final int min = (int)iPanel.getMinimum();
         
-        jSlider1.setMinimum(min);
-        jSlider1.setMaximum(max);
-        jSlider1.setValue((int)iPanel.getWindow().getLevel());
+        //jSlider1.setMinimum(min);
+        //jSlider1.setMaximum(max);
+        //jSlider1.setValue((int)iPanel.getWindow().getLevel());
         
-        jSlider2.setMinimum(min);
-        jSlider2.setMaximum(max);
-        jSlider2.setValue((int)iPanel.getWindow().getWidth());
+        //jSlider2.setMinimum(min);
+        //jSlider2.setMaximum(max);
+        //jSlider2.setValue((int)iPanel.getWindow().getWidth());
         jCheckBox1.setSelected(iPanel.isInverted());
         jRadioButton1.setSelected(true);
         jRadioButton2.setSelected(false);
@@ -309,16 +309,24 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
         // TODO add your handling code here:
         try {
-            openImage("d:\\images\\pop.dcm");
+            //openImage("d:\\images\\pop.dcm");
+            openImage("");
         }
         catch (IOException e) {
-            System.err.println("-->shit " + e.getLocalizedMessage());
+            logger.error(e.getLocalizedMessage());
         }
     }//GEN-LAST:event_jMenuItem2ActionPerformed
     
     public void windowChanged(WindowChangeEvent aE) {
-        if (aE.getSource() != this) {    
-            jSlider1.setValue((int)aE.getWindow().getLevel());       
+        if (aE.getSource() != this) {   
+            if (aE.isRangeChanged()) {
+                jSlider1.setMinimum((int)aE.getMin());
+                jSlider1.setMaximum((int)aE.getMax());
+                jSlider2.setMinimum((int)aE.getMin());
+                jSlider2.setMaximum((int)aE.getMax());
+            }
+            
+            jSlider1.setValue((int)aE.getWindow().getLevel());
             jSlider2.setValue((int)aE.getWindow().getWidth());
         }
     }

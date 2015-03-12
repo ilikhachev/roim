@@ -76,7 +76,7 @@ public class JMedImagePane extends JComponent {
                     iInverted = aI;    
                     makeLUT();
                     updateBufferedImage();
-                    notifyWindowChanged();
+                    notifyWindowChanged(false);
                 }
             }
             
@@ -86,7 +86,7 @@ public class JMedImagePane extends JComponent {
                     iLog = aL; 
                     makeLUT();
                     updateBufferedImage();
-                    notifyWindowChanged();
+                    notifyWindowChanged(false);
                 }
             }
             
@@ -172,14 +172,15 @@ public class JMedImagePane extends JComponent {
         
         public void addWindowChangeListener(WindowChangeListener aL) {
             iWinListeners.add(aL);
-            aL.windowChanged(new WindowChangeEvent(this, iWM.getWindow()));
+            aL.windowChanged(new WindowChangeEvent(this, iWM.getWindow(), getMinimum(), getMaximum(), true));
             }
         
-        private void notifyWindowChanged(/*Window aW*/) {
+        private void notifyWindowChanged(boolean aRC) {
+            final WindowChangeEvent wce = new WindowChangeEvent(this, iWM.getWindow(), getMinimum(), getMaximum(), aRC);
             for (WindowChangeListener l:iWinListeners)
-                l.windowChanged(new WindowChangeEvent(this, iWM.getWindow()));
-            }
-                
+                l.windowChanged(wce);
+        }
+        
         private final MedImage2D iImg;
         private final Controller iController;
         private final WindowMgmt iWM; //new WindowMgmt();
@@ -236,7 +237,7 @@ public class JMedImagePane extends JComponent {
                 iWM.getWindow().setWindow(aW.getLevel(), aW.getWidth()); 
                 iWM.makeLUT();
                 updateBufferedImage();
-                notifyWindowChanged();
+                notifyWindowChanged(false);
             }
         }
                 /**Git tets **/

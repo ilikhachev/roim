@@ -65,57 +65,34 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     protected int iMiddleAction =  MOUSE_ACTION_NONE;
     protected int iRightAction  =  MOUSE_ACTION_WINDOW;
 
-    abstract class ActionItem {
-        protected int iX;
-        protected int iY;
-        //static private final JMedImagePane iControlled;
-        
-        public ActionItem(int aX, int aY){iX = aX; iY = aY;}
-        public final ActionItem release(int aX, int aY) {if (!DoRelease(aX, aY)) return null; else return this;}
+    class RootActionItem extends ActionItem {
+        RootActionItem(int aX, int aY){super(aX, aY);}
+        protected  void DoAction(int aX, int aY){} 
+        protected  boolean DoWheel(int aX) {iControlled.zoom(-aX/10.0, 0, 0); return true;}
 
-        public final void action(int aX, int aY) {
-            DoAction(aX, aY); iX = aX; iY = aY;
-        }
-        
-        public final void wheel(int aX) {
-            DoWheel(aX);
-        }     
-        
-        public final void paint(Graphics gc) {
-            Color oc = gc.getColor();
-            gc.setColor(ACTIVE_ROI_COLOR);
-            DoPaint((Graphics2D)gc);
-            gc.setColor(oc);
-        }
-
-        protected abstract void DoAction(int aX, int aY); 
-        protected boolean DoWheel(int aX) {iControlled.zoom(-aX/10.0, 0, 0); return true;}
-        // return true if action shall be continued
-        protected boolean DoRelease(int aX, int aY) {return false;}
-        protected void DoPaint(Graphics2D aGC) {}
+        protected  boolean DoRelease(int aX, int aY) {return false;}
+        protected  void DoPaint(Graphics2D aGC) {}   
     }
-
+    
     ActionItem NewAction(int aType, int aX, int aY) {
         switch (aType){   
             case MOUSE_ACTION_WINDOW: 
-                 return new ActionItem( aX, aY) {
+                 return new RootActionItem( aX, aY) {
                      public void DoAction(int aX, int aY) {
                         iControlled.setWindow(new Window(iControlled.getWindow().getLevel() + aX - iX, iControlled.getWindow().getWidth() + iY - aY));
                         iControlled.repaint();
                  }}; 
             case MOUSE_ACTION_ZOOM: 
-            case MOUSE_ACTION_SELECT: return new ActionItem( aX, aY) {public void DoAction(int aX, int aY){}};  
+            case MOUSE_ACTION_SELECT: return new RootActionItem(aX, aY);
             case MOUSE_ACTION_PAN: 
-                return new ActionItem(aX, aY) {public void DoAction(int aX, int aY){
+                return new RootActionItem(aX, aY) {public void DoAction(int aX, int aY){
                                                            iControlled.pan(aX-iX, aY-iY);
                 }};  
-            case MOUSE_ACTION_WHEEL: return new ActionItem(aX, aY) {public void DoAction(int aX, int aY) {
-                                                  iControlled.zoom(aX/10.0, 0, 0);
-                                                  }} ; 
+            case MOUSE_ACTION_WHEEL: return new RootActionItem(aX, aY);
             case MOUSE_ACTION_ROI: 
             case MOUSE_ACTION_MENU:
             case MOUSE_ACTION_NONE:
-            default: return new ActionItem(aX, aY) {public void DoAction(int aX, int aY){}};      
+            default: return new RootActionItem(aX, aY);      
         }        
     }   
     
@@ -169,7 +146,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
         }
         else if (null != iSelected) {  // move ROI
             //iControlled.deleteRoi(iSelected);
-            iButton = new ActionItem(e.getX(), e.getY()) {
+            iButton = new RootActionItem(e.getX(), e.getY()) {
                 protected void DoAction(int aX, int aY) {
                     AffineTransform tmp = AffineTransform.getTranslateInstance(aX-iX, aY-iY);
                     Rectangle2D old = iSelected.iShape.getBounds2D();
@@ -197,7 +174,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     }
 
     public void mouseReleased(MouseEvent e) {
-        iButton = null != iButton ? iButton.release(e.getX(), e.getY()) : null;               
+        if (null != iButton && !iButton.release(e.getX(), e.getY())) iButton = null;               
     }
 
     public void mouseMoved(MouseEvent e) {   
@@ -255,7 +232,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
         logger.info("-->action, " + e.getActionCommand() + " ," + e.paramString() + "\n");
         switch (e.getActionCommand()) {
             case KCommandRoiRect: 
-                    iButton  = new ActionItem(-1, -1) {                           
+                    iButton  = new RootActionItem(-1, -1) {                           
                     Path2D iPath = new Path2D.Double();
                     int first = 0;
                     public void DoAction(int aX, int aY) {
@@ -282,7 +259,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
                     }
                 }; break;
             case KCommandRoiOval:
-                    iButton  = new ActionItem(-1, -1) {
+                    iButton  = new RootActionItem(-1, -1) {
 
                     Point.Double iTL = new Point.Double(.0, .0);
                     Point.Double iWH = new Point.Double(.0, .0);
