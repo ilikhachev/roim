@@ -21,16 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import javax.swing.JFrame;
 
-import javax.imageio.spi.IIORegistry;
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageOutputStream;
-import java.util.NoSuchElementException;
+
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.Level;
@@ -61,17 +52,7 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
         logger.info("Entering application.");
 
         initComponents();
-        ImageReader ir;
         
-        try {
-     //   imageReader = ImageIO.getImageReadersByFormatName("DICOM").next();
-        } catch (NoSuchElementException e) {
-          //IIORegistry registry = IIORegistry.getDefaultInstance();
-          ///registry.registerServiceProvider(new org.dcm4che3.imageio.plugins.dcm.DicomImageWriterSpi());
-         // registry.registerServiceProvider(new org.dcm4che3.imageio.plugins.dcm.DicomImageReaderSpi());  
-          //ir = ImageIO.getImageReadersByFormatName("DICOM").next();  
-        } 
-        //imageReader = ir;
     }
     	
     /**

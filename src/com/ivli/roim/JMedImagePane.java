@@ -120,7 +120,7 @@ public class JMedImagePane extends JComponent {
             private static final double LUT_RANGE = LUT_MAX - LUT_MIN;
             
             private final void makeLogLUT() {                
-                LutBuffer lut = new LutBuffer(iImg.getBufferedImage(0).getSampleModel().getDataType(), iImg.isSigned());  
+                LutBuffer lut = new LutBuffer(iImg.getBufferedImage().getSampleModel().getDataType(), iImg.isSigned());  
                 
 		for (int i = 0; i < lut.length; ++i) {
                     double y = Ranger.range(LUT_RANGE / (1 + Math.exp(-4*(iPVt.transform(lut.min + i) - iWin.getLevel())/iWin.getWidth())) + LUT_MIN + 0.5, LUT_MIN, LUT_MAX);
@@ -251,14 +251,14 @@ public class JMedImagePane extends JComponent {
         public JMedImagePane(String aFileName) throws IOException {
             iImg = new MedImage2D();      
             iImg.open(aFileName);
-            iImg.getBufferedImage(0);  
+            iImg.first();  
             iWM = new WindowMgmt(new Window(getMinimum(), getMaximum()));
             iController = new Controller(this);
             }
         
 	public JMedImagePane(MedImage2D anImg) {
             iImg = anImg;
-            iImg.getBufferedImage(0);   
+            iImg.first();   
             iWM = new WindowMgmt(new Window(getMinimum(), getMaximum()));
             iController = new Controller(this);            
             }
@@ -289,7 +289,7 @@ public class JMedImagePane extends JComponent {
         iBuf = null; ///TODO: get optimized - separate zoom and windowing operations 
         RenderingHints hts = new RenderingHints(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         AffineTransformOp z = new AffineTransformOp(iZoom, hts);
-        BufferedImage src = iWM.transform(iImg.getBufferedImage(0));
+        BufferedImage src = iWM.transform(iImg.getBufferedImage());
         BufferedImage dst = z.createCompatibleDestImage(src, iWM.iCMdl);
         iBuf = z.filter(src, dst);     
     }
