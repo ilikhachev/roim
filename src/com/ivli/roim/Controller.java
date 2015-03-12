@@ -44,8 +44,7 @@ import org.apache.log4j.LogManager;
 /**
  *
  * @author likhachev
- */
-        
+ */        
 class Controller implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener, ActionListener, WindowChangeListener {
     private static final Logger logger = LogManager.getLogger(Controller.class);
     
@@ -69,26 +68,28 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     abstract class ActionItem {
         protected int iX;
         protected int iY;
-
+        //static private final JMedImagePane iControlled;
+        
         public ActionItem(int aX, int aY){iX = aX; iY = aY;}
         public final ActionItem release(int aX, int aY) {if (!DoRelease(aX, aY)) return null; else return this;}
 
         public final void action(int aX, int aY) {
-                        DoAction(aX, aY); iX = aX; iY = aY;
-                    }
+            DoAction(aX, aY); iX = aX; iY = aY;
+        }
         
-        public final void action(int aX) {
-                        DoWheelAction(aX);
-                    }     
+        public final void wheel(int aX) {
+            DoWheel(aX);
+        }     
+        
         public final void paint(Graphics gc) {
-                        Color oc = gc.getColor();
-                        gc.setColor(ACTIVE_ROI_COLOR);
-                        DoPaint((Graphics2D)gc);
-                        gc.setColor(oc);
-                    }
+            Color oc = gc.getColor();
+            gc.setColor(ACTIVE_ROI_COLOR);
+            DoPaint((Graphics2D)gc);
+            gc.setColor(oc);
+        }
 
         protected abstract void DoAction(int aX, int aY); 
-        protected void DoWheelAction(int aX) {iControlled.zoom(-aX/10.0, 0, 0);}
+        protected boolean DoWheel(int aX) {iControlled.zoom(-aX/10.0, 0, 0); return true;}
         // return true if action shall be continued
         protected boolean DoRelease(int aX, int aY) {return false;}
         protected void DoPaint(Graphics2D aGC) {}
@@ -97,12 +98,13 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     ActionItem NewAction(int aType, int aX, int aY) {
         switch (aType){   
             case MOUSE_ACTION_WINDOW: 
-                 return new ActionItem(aX, aY) {public void DoAction(int aX, int aY){
-                                                            iControlled.setWindow(new Window(iControlled.getWindow().getLevel() + aX - iX, iControlled.getWindow().getWidth() + iY - aY));
-                                                            iControlled.repaint();
+                 return new ActionItem( aX, aY) {
+                     public void DoAction(int aX, int aY) {
+                        iControlled.setWindow(new Window(iControlled.getWindow().getLevel() + aX - iX, iControlled.getWindow().getWidth() + iY - aY));
+                        iControlled.repaint();
                  }}; 
             case MOUSE_ACTION_ZOOM: 
-            case MOUSE_ACTION_SELECT: return new ActionItem(aX, aY) {public void DoAction(int aX, int aY){}};  
+            case MOUSE_ACTION_SELECT: return new ActionItem( aX, aY) {public void DoAction(int aX, int aY){}};  
             case MOUSE_ACTION_PAN: 
                 return new ActionItem(aX, aY) {public void DoAction(int aX, int aY){
                                                            iControlled.pan(aX-iX, aY-iY);
@@ -114,17 +116,14 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
             case MOUSE_ACTION_MENU:
             case MOUSE_ACTION_NONE:
             default: return new ActionItem(aX, aY) {public void DoAction(int aX, int aY){}};      
-        }
-        
-    }
+        }        
+    }   
     
-    
-    private ActionItem iButton = null;
-    private ActionItem iWheel  = null;  
-    private ROI        iSelected   = null;
-    private JMedImagePane iControlled = null;
-    
-    
+    private ActionItem iButton;
+    private ActionItem iWheel;  
+    private ROI        iSelected;
+    private final JMedImagePane iControlled;
+
     public Controller(JMedImagePane aC) {
         iControlled = aC;
         iWheel = NewAction(MOUSE_ACTION_WHEEL, 0, 0);
@@ -146,7 +145,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     }
 
     public void mouseWheelMoved(MouseWheelEvent e) {                         
-        iWheel.action(e.getWheelRotation());
+        iWheel.wheel(e.getWheelRotation());
     }
 
     public void mouseClicked(MouseEvent e) {
@@ -316,20 +315,16 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
                     }
                 }; break;
             case KCommandRoiFree: break;
+            case KCommandRoiMove: break;
             case KCommandRoiDelete: 
                 iControlled.deleteRoi(iSelected); 
                 iSelected = null; 
                 iControlled.repaint(); break;
-            case KCommandRoiMove: break;
-            case KCommandRoiClone: 
-                
-         
-                    iControlled.cloneRoi(iSelected);
-                    iControlled.repaint();
-                   
-               
+            
+            case KCommandRoiClone:   
+                iControlled.cloneRoi(iSelected);
+                iControlled.repaint();
                 iSelected = null;
-                
                 break;
             default: break;
         }
