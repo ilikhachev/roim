@@ -19,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 
 
@@ -46,13 +47,9 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
  
     
     public NewJFrame() { 
-        
-       BasicConfigurator.configure();
-
+        BasicConfigurator.configure();
         logger.info("Entering application.");
-
         initComponents();
-        
     }
     	
     /**
@@ -84,13 +81,15 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setAutoRequestFocus(false);
 
+        jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        jPanel1.setPreferredSize(new java.awt.Dimension(597, 600));
         jPanel1.setVerifyInputWhenFocusTarget(false);
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 597, Short.MAX_VALUE)
+            .addGap(0, 595, Short.MAX_VALUE)
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -198,7 +197,7 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 10, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jRadioButton1)
                     .addComponent(jCheckBox1)
@@ -225,7 +224,9 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jRadioButton2)
                 .addGap(150, 150, 150))
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 622, Short.MAX_VALUE))
         );
 
         pack();
@@ -261,15 +262,22 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
 	iPanel = new JMedImagePane(dicomFileName);
         
         jPanel1.removeAll();
-        jPanel1.add(iPanel);
         
-        iPanel.setSize(jPanel1.getSize());
+        jPanel1.setLayout(new BoxLayout(jPanel1, BoxLayout.X_AXIS));
         
+        
+        //iPanel.setSize(jPanel1.getWidth(), jPanel1.getHeight());
+        //iPanel.setLocation(20, 0);
         iPanel.addWindowChangeListener(this);
-        
+        //iPanel.setEnabled(true);
         //final int max = (int)iPanel.getMaximum();
         //final int min = (int)iPanel.getMinimum();
-        
+        iPanel.setMinimumSize(new Dimension(jPanel1.getWidth()-50, jPanel1.getHeight()));
+        iPanel.setPreferredSize(jPanel1.getSize());
+        iPanel.setMaximumSize(new Dimension(Short.MAX_VALUE,
+                                  Short.MAX_VALUE));
+        iPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        jPanel1.add(iPanel);
         //jSlider1.setMinimum(min);
         //jSlider1.setMaximum(max);
         //jSlider1.setValue((int)iPanel.getWindow().getLevel());
@@ -282,16 +290,26 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
         jRadioButton2.setSelected(false);
         
         LutPanel lut = new LutPanel(iPanel);
-        lut.setSize(jPanel2.getSize());
+        //lut.setSize(20, iPanel.getHeight());
+        //lut.setMinimumSize(new Dimension(50, jPanel1.getWidth()));
+        //lut.setPreferredSize(new Dimension(50, jPanel1.getWidth()));
+        //lut.setMaximumSize(new Dimension(Short.MAX_VALUE,
+         //                         Short.MAX_VALUE));
+        
+        lut.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        lut.setVisible(true);
+        jPanel1.add(lut); 
+        //jPanel1.setEnabled(true);  
+        
+        jPanel1.validate();
         iPanel.addWindowChangeListener(lut);
-        jPanel2.add(lut);   
     }
     
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
         // TODO add your handling code here:
         try {
-            //openImage("d:\\images\\pop.dcm");
-            openImage("");
+            openImage("d:\\images\\pop.dcm");
+            //openImage("");
         }
         catch (IOException e) {
             logger.error(e.getLocalizedMessage());
@@ -313,7 +331,8 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
     }
     
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
-        iPanel.resetView();
+        if(null != iPanel) 
+            iPanel.resetView();
         jPanel1.repaint();
     }//GEN-LAST:event_jMenuItem4ActionPerformed
     //static boolean b = true; 

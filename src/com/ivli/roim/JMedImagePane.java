@@ -148,15 +148,15 @@ public class JMedImagePane extends JComponent {
                 iLok = new LookupOp(new ByteLookupTable(0, lut.bytes), null);	
             }
                         
-        public final void makeLUT() {    
+            public final void makeLUT() {    
                 logger.info("make LUT " + (iLog ? "logarithmic":"linear") + ", level=" + iWin.getLevel() + ", width=" + iWin.getWidth());
-                if (iLog)
-                    makeLogLUT(); 
+                if (isLinear())
+                    makeLinearLUT();   
                 else 
-                    makeLinearLUT();    
+                    makeLogLUT();     
             }
             
-        public BufferedImage transform(BufferedImage aI) {
+            public BufferedImage transform(BufferedImage aI) {
                 if (null == iLok)
                     makeLUT();
                 return iLok.filter(aI, iLok.createCompatibleDestImage(aI, iCMdl));	
@@ -247,21 +247,34 @@ public class JMedImagePane extends JComponent {
         void    setLinear(boolean aI) {iWM.setLinear(aI);}
         double  getMinimum() {return iImg.getMinimum();}
         double  getMaximum() {return iImg.getMaximum();}    
-       
+        
         public JMedImagePane(String aFileName) throws IOException {
             iImg = new MedImage2D();      
             iImg.open(aFileName);
             iImg.first();  
             iWM = new WindowMgmt(new Window(getMinimum(), getMaximum()));
             iController = new Controller(this);
-            }
+            
+         //   iLutPanel = new LutPanel(this);
+         //   iLutPanel.setSize(50, getHeight());
+         //   iLutPanel.setLocation(getWidth()-50, 0);
+         //   addWindowChangeListener(iLutPanel);
+            //jPanel2.add(lut);   
+        //    add(iLutPanel);
+        //    iLutPanel.setEnabled(true);
+        }
+        
+        //public void setSize(int width, int height) {
+        //    super.setSize(width, height);
+        //    iLutPanel.setSize(50, height);
+       // }
         
 	public JMedImagePane(MedImage2D anImg) {
             iImg = anImg;
             iImg.first();   
             iWM = new WindowMgmt(new Window(getMinimum(), getMaximum()));
             iController = new Controller(this);            
-            }
+        }
    
     AffineTransform iZoom   = AffineTransform.getScaleInstance(DEFAULT_SCALE_X, DEFAULT_SCALE_Y);
     Point           iOrigin = new Point(0,0);    

@@ -59,16 +59,20 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     static final int MOUSE_ACTION_MENU   = 200;
     static final int MOUSE_ACTION_ROI    = 500;
 
+    static final double ZOOM_SENSITIVITY_FACTOR = 10.;
     static final Color ACTIVE_ROI_COLOR = Color.RED;
 
-    protected int iLeftAction   =  MOUSE_ACTION_PAN;
-    protected int iMiddleAction =  MOUSE_ACTION_NONE;
-    protected int iRightAction  =  MOUSE_ACTION_WINDOW;
+    protected int iLeftAction   = MOUSE_ACTION_PAN;
+    protected int iMiddleAction = MOUSE_ACTION_ZOOM;
+    protected int iRightAction  = MOUSE_ACTION_WINDOW;
 
     class RootActionItem extends ActionItem {
         RootActionItem(int aX, int aY){super(aX, aY);}
         protected  void DoAction(int aX, int aY){} 
-        protected  boolean DoWheel(int aX) {iControlled.zoom(-aX/10.0, 0, 0); return true;}
+        protected  boolean DoWheel(int aX) {
+            iControlled.zoom(-aX/ZOOM_SENSITIVITY_FACTOR, 0, 0); 
+            return true;
+        }
 
         protected  boolean DoRelease(int aX, int aY) {return false;}
         protected  void DoPaint(Graphics2D aGC) {}   
@@ -82,8 +86,9 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
                         iControlled.setWindow(new Window(iControlled.getWindow().getLevel() + aX - iX, iControlled.getWindow().getWidth() + iY - aY));
                         iControlled.repaint();
                  }}; 
-            case MOUSE_ACTION_ZOOM: 
-            case MOUSE_ACTION_SELECT: return new RootActionItem(aX, aY);
+            case MOUSE_ACTION_ZOOM: return new RootActionItem(aX, aY) {public void DoAction(int aX, int aY){
+                                                           iControlled.zoom((aX-iX)/ZOOM_SENSITIVITY_FACTOR, 0, 0);
+                }};  
             case MOUSE_ACTION_PAN: 
                 return new RootActionItem(aX, aY) {public void DoAction(int aX, int aY){
                                                            iControlled.pan(aX-iX, aY-iY);
@@ -97,13 +102,13 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     }   
     
     private ActionItem iButton;
-    private ActionItem iWheel;  
+    //private ActionItem iWheel;  
     private ROI        iSelected;
     private final JMedImagePane iControlled;
 
     public Controller(JMedImagePane aC) {
         iControlled = aC;
-        iWheel = NewAction(MOUSE_ACTION_WHEEL, 0, 0);
+        //iWheel = NewAction(MOUSE_ACTION_WHEEL, 0, 0);
         register();
     }
 
@@ -122,7 +127,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     }
 
     public void mouseWheelMoved(MouseWheelEvent e) {                         
-        iWheel.wheel(e.getWheelRotation());
+        iButton.wheel(e.getWheelRotation());
     }
 
     public void mouseClicked(MouseEvent e) {
@@ -367,7 +372,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
 
     public void paint(Graphics gc) {
         if (null != iButton) iButton.paint(gc);
-        if (null != iWheel) iWheel.paint(gc);
+       /// if (null != iWheel) iWheel.paint(gc);
        /// if (null != iSelected) 
     }
 
