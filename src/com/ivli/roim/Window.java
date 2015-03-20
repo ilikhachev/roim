@@ -32,7 +32,6 @@ public class Window implements Serializable, Cloneable {
         iWidth = Math.max(WINDOW_WIDTH_MINIMUM, aW);   
     }
 
-
     public final double getLevel()  {return iLevel;}
     public final double getWidth()  {return iWidth;}
 

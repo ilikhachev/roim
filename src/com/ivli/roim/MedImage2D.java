@@ -53,8 +53,9 @@ import org.apache.log4j.LogManager;
 
 
 public class MedImage2D {
+
     private static final Logger logger = LogManager.getLogger(MedImage2D.class);
-    
+     
     static { //ensure dicom image reader is installed otherwise make try to install 
         ImageReader ir;
         
@@ -141,5 +142,6 @@ public class MedImage2D {
         return param;
     }
 
+  
  
 }

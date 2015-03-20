@@ -37,248 +37,133 @@ import org.apache.log4j.LogManager;
 
 public class JMedImagePane extends JComponent {
 
-        final static private boolean DRAW_OVERLAYS_ON_BUFFERED_IMAGE = false; //i cry ther's no #ifdef 
-        final static private double DEFAULT_ELLIPSE_WIDTH  = 3.;
-        final static private double DEFAULT_ELLIPSE_HEIGHT = 3.;
-        final static private double DEFAULT_SCALE_X = 1.;
-        final static private double DEFAULT_SCALE_Y = 1.;
-        
-        
-	private static final Logger logger = LogManager.getLogger(JMedImagePane.class);
-                
-        class  WindowMgmt {
-            private LookupOp            iLok = null;
-            private ComponentColorModel iCMdl = null;
-            private PValueTransform     iPVt = new PValueTransform();
-            private Window              iWin = null;//new Window();
-            private boolean             iInverted = false;            
-            private boolean             iLog = false;
-            
-            private WindowMgmt() {}
-            public WindowMgmt(Window aW) {
-                iWin = aW;
-                iCMdl = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY),
-                                                null, //new int[] {8},
-                                                false,		// has alpha
-                                                false,		// alpha premultipled
-                                                Transparency.OPAQUE,
-                                                DataBuffer.TYPE_BYTE);
-            }
-            
-            public void setTransform(PValueTransform aPVt) {iPVt = aPVt;}     
-            
-            public Window getWindow() {return iWin;}
-        
-            public boolean isInverted() {return iInverted;}
-            
-            public void setInverted(boolean aI) {
-                if (aI != isInverted()) {
-                    iInverted = aI;    
-                    makeLUT();
-                    updateBufferedImage();
-                    notifyWindowChanged(false);
-                }
-            }
-            
-            public boolean isLinear() {return true!=iLog;}
-            public void setLinear(boolean aL) {
-                if (iLog != aL) {
-                    iLog = aL; 
-                    makeLUT();
-                    updateBufferedImage();
-                    notifyWindowChanged(false);
-                }
-            }
-            
-            private class LutBuffer {
-                byte [] bytes = null;
-                int  length = 0;
-                int  min = 0;
-                int  max = 0;
-                
-                public LutBuffer(int Type, boolean Signed) {
-                    switch (Type) {
-                        case DataBuffer.TYPE_SHORT:
-                        case DataBuffer.TYPE_USHORT:
-                            min = Signed ? -32768 : 0;
-                            max = Signed ?  32768 : 65536;
-                            bytes=new byte[length = 65536];
-                            break;
-                        case DataBuffer.TYPE_BYTE:
-                            min = Signed ? -128 : 0;
-                            max = Signed ?  128 : 256;
-                            bytes=new byte[length = 256]; 
-                            break;
-                        default:
-                            throw new IllegalArgumentException();                  
-                    }                
-                }
-            }
-                
-            private static final double LUT_MIN   = .0;
-	    private static final double LUT_MAX   = 255.;
-            private static final double LUT_RANGE = LUT_MAX - LUT_MIN;
-            
-            private final void makeLogLUT() {                
-                LutBuffer lut = new LutBuffer(iImg.getBufferedImage().getSampleModel().getDataType(), iImg.isSigned());  
-                
-		for (int i = 0; i < lut.length; ++i) {
-                    double y = Ranger.range(LUT_RANGE / (1 + Math.exp(-4*(iPVt.transform(lut.min + i) - iWin.getLevel())/iWin.getWidth())) + LUT_MIN + 0.5, LUT_MIN, LUT_MAX);
-                    lut.bytes[i]=(byte)(isInverted() ? (LUT_MAX - y) : y);
-		}
-            
-		iLok  = new LookupOp(new ByteLookupTable(0, lut.bytes), null);	
-            }
-           
-            private final void makeLinearLUT() {  		
-                LutBuffer lut = new LutBuffer(iImg.getBufferedImage().getSampleModel().getDataType(), iImg.isSigned()); 
-                
-                for (int i = 0; i < lut.length; ++i) {
-                    double y = iPVt.transform(i-lut.min);
-                    
-                    if (y <= iWin.getBottom()) y = LUT_MIN;
-                    else if (y > iWin.getTop()) y = LUT_MAX;
-                    else {
-                            y = (((y - iWin.getLevel())/iWin.getWidth() + .5) * LUT_RANGE + LUT_MIN);
-                    }
+    final static private boolean DRAW_OVERLAYS_ON_BUFFERED_IMAGE = false; //i cry ther's no #ifdef 
+    final static private double DEFAULT_ELLIPSE_WIDTH  = 3.;
+    final static private double DEFAULT_ELLIPSE_HEIGHT = 3.;
+    final static private double DEFAULT_SCALE_X = 1.;
+    final static private double DEFAULT_SCALE_Y = 1.;
 
-                    lut.bytes[i] = (byte)(isInverted() ? LUT_MAX - y : y);
-                }
+    private final MedImage2D iImg;
+    private final Controller iController;
+    private final VOILut     iWM; 
+    private final List<ROI>  iRoi = new LinkedList();
+    private final AffineTransform  iZoom = AffineTransform.getScaleInstance(DEFAULT_SCALE_X, DEFAULT_SCALE_Y);
+    private final Point      iOrigin = new Point(0,0);    
+    private BufferedImage    iBuf;
+    private final HashSet<WindowChangeListener> iWinListeners = new HashSet();    
+        
+    public JMedImagePane(String aFileName) throws IOException {
+        iImg = new MedImage2D();      
+        iImg.open(aFileName);
+        iImg.first();  
+        iWM = new VOILut(iImg);
+        iController = new Controller(this);
+    }
 
-                iLok = new LookupOp(new ByteLookupTable(0, lut.bytes), null);	
-            }
-                        
-            public final void makeLUT() {    
-                logger.info("make LUT " + (iLog ? "logarithmic":"linear") + ", level=" + iWin.getLevel() + ", width=" + iWin.getWidth());
-                if (isLinear())
-                    makeLinearLUT();   
-                else 
-                    makeLogLUT();     
-            }
-            
-            public BufferedImage transform(BufferedImage aI) {
-                if (null == iLok)
-                    makeLUT();
-                return iLok.filter(aI, iLok.createCompatibleDestImage(aI, iCMdl));	
-            }
-        } 
-        
-        //TODO: it's only temporary hook
-        public BufferedImage transform(BufferedImage aI) {
-            return iWM.transform(aI);
+    public JMedImagePane(MedImage2D anImg) {
+        iImg = anImg;
+        iImg.first();   
+        iWM = new VOILut(iImg);
+        iController = new Controller(this);            
+    }
+//TODO: it's only temporary hook
+    public BufferedImage transform(BufferedImage aI) {
+        return iWM.transform(aI, null);
+    }
+
+    public void addWindowChangeListener(WindowChangeListener aL) {
+        iWinListeners.add(aL);
+        aL.windowChanged(new WindowChangeEvent(this, iWM.getWindow(), getMinimum(), getMaximum(), true));
+    }
+
+    private void notifyWindowChanged(boolean aRC) {
+        final WindowChangeEvent wce = new WindowChangeEvent(this, iWM.getWindow(), getMinimum(), getMaximum(), aRC);
+        for (WindowChangeListener l:iWinListeners)
+            l.windowChanged(wce);
+    }
+
+    public void addRoi(ROI aR) {
+        AffineTransform trans = AffineTransform.getTranslateInstance(iOrigin.x, iOrigin.y); 
+        trans.concatenate(iZoom);
+        try { 
+            trans.invert(); 
+        } catch (Exception e){ 
+        //try to do anything useful if u can
         }
-                
-        private final HashSet<WindowChangeListener> iWinListeners = new HashSet();
-        
-        public void addWindowChangeListener(WindowChangeListener aL) {
-            iWinListeners.add(aL);
-            aL.windowChanged(new WindowChangeEvent(this, iWM.getWindow(), getMinimum(), getMaximum(), true));
-            }
-        
-        private void notifyWindowChanged(boolean aRC) {
-            final WindowChangeEvent wce = new WindowChangeEvent(this, iWM.getWindow(), getMinimum(), getMaximum(), aRC);
-            for (WindowChangeListener l:iWinListeners)
-                l.windowChanged(wce);
+
+        iRoi.add(aR.createTransformedROI(trans));
+    }
+
+    public void cloneRoi(ROI aR) {
+        iRoi.add(new ROI(aR));        
+    }
+
+    private Rectangle point2shape(Point aP) {
+        Rectangle r = new Rectangle(aP.x, aP.y, 3, 3);
+        AffineTransform trans = AffineTransform.getTranslateInstance(iOrigin.x, iOrigin.y); 
+        trans.concatenate(iZoom); 
+        try { 
+            trans.invert(); 
+        } catch (Exception e){ }
+        Shape ret = trans.createTransformedShape(r);
+        return ret.getBounds();
+    }
+
+    ROI findRoi(Point aP) {           
+        for (ROI r:iRoi) {
+           if (r.iShape.intersects(point2shape(new Point(aP.x, aP.y)))) 
+                return r;                        
         }
+        return null;
+    }
         
-        private final MedImage2D iImg;
-        private final Controller iController;
-        private final WindowMgmt iWM; //new WindowMgmt();
-        private final List<ROI>  iRoi = new LinkedList();
-        
-        public void addRoi(ROI aR) {
+    ROI deleteRoi(ROI aR) {           
+        if (iRoi.remove(aR)) {
             AffineTransform trans = AffineTransform.getTranslateInstance(iOrigin.x, iOrigin.y); 
-            trans.concatenate(iZoom);
-            try { 
-                trans.invert(); 
-            } catch (Exception e){ 
-            //try to do anything useful if u can
-            }
-            
-            iRoi.add(aR.createTransformedROI(trans));
+            trans.concatenate(iZoom);  
+            return aR.createTransformedROI(trans); 
         }
+        return null;
+    }
 
-        public void cloneRoi(ROI aR) {
-            iRoi.add(new ROI(aR));        
-        }
-        
-        private Rectangle point2shape(Point aP) {
-            Rectangle r = new Rectangle(aP.x, aP.y, 3, 3);
-            AffineTransform trans = AffineTransform.getTranslateInstance(iOrigin.x, iOrigin.y); 
-            trans.concatenate(iZoom); 
-            try { 
-                trans.invert(); 
-            } catch (Exception e){ }
-            Shape ret = trans.createTransformedShape(r);
-            return ret.getBounds();
-        }
-                
-        ROI findRoi(Point aP) {           
-            for (ROI r:iRoi) {
-               if (r.iShape.intersects(point2shape(new Point(aP.x, aP.y)))) 
-                    return r;                        
-            }
-            return null;
-        }
-        
-        ROI deleteRoi(ROI aR) {           
-            if (iRoi.remove(aR)) {
-                AffineTransform trans = AffineTransform.getTranslateInstance(iOrigin.x, iOrigin.y); 
-                trans.concatenate(iZoom);  
-                return aR.createTransformedROI(trans); 
-            }
-            return null;
-        }
-        
-        public Window getWindow() {return iWM.getWindow();}
+    public Window getWindow() {return iWM.getWindow();}
               
-        public void setWindow (Window aW) {
-            if (!iWM.getWindow().equals(aW)) {
+    public void setWindow (Window aW) {
+        if (!iWM.getWindow().equals(aW)) {
+            if (aW.getLevel()  > getMinimum()  && aW.getLevel() < getMaximum()) {
+
                 iWM.getWindow().setWindow(aW.getLevel(), aW.getWidth()); 
+
                 iWM.makeLUT();
                 updateBufferedImage();
                 notifyWindowChanged(false);
             }
         }
+    }
                 /**Git tets **/
-        boolean isInverted() {return iWM.isInverted();}
-        void    setInverted(boolean aI) {iWM.setInverted(aI);} 
-        boolean isLinear() {return iWM.isLinear();}
-        void    setLinear(boolean aI) {iWM.setLinear(aI);}
-        double  getMinimum() {return iImg.getMinimum();}
-        double  getMaximum() {return iImg.getMaximum();}    
-        
-        public JMedImagePane(String aFileName) throws IOException {
-            iImg = new MedImage2D();      
-            iImg.open(aFileName);
-            iImg.first();  
-            iWM = new WindowMgmt(new Window(getMinimum(), getMaximum()));
-            iController = new Controller(this);
-            
-         //   iLutPanel = new LutPanel(this);
-         //   iLutPanel.setSize(50, getHeight());
-         //   iLutPanel.setLocation(getWidth()-50, 0);
-         //   addWindowChangeListener(iLutPanel);
-            //jPanel2.add(lut);   
-        //    add(iLutPanel);
-        //    iLutPanel.setEnabled(true);
+    boolean isInverted() {
+        return iWM.isInverted();
+    }
+
+    void  setInverted(boolean aI) {
+        if (iWM.setInverted(aI)) {              
+            updateBufferedImage();
+            notifyWindowChanged(false);
         }
-        
-        //public void setSize(int width, int height) {
-        //    super.setSize(width, height);
-        //    iLutPanel.setSize(50, height);
-       // }
-        
-	public JMedImagePane(MedImage2D anImg) {
-            iImg = anImg;
-            iImg.first();   
-            iWM = new WindowMgmt(new Window(getMinimum(), getMaximum()));
-            iController = new Controller(this);            
-        }
-   
-    AffineTransform iZoom   = AffineTransform.getScaleInstance(DEFAULT_SCALE_X, DEFAULT_SCALE_Y);
-    Point           iOrigin = new Point(0,0);    
-    BufferedImage   iBuf;
+    } 
+    
+    boolean isLinear() {return iWM.isLinear();}
+    void    setLinear(boolean aI) {
+        if(iWM.setLinear(aI)) {
+            updateBufferedImage();
+            notifyWindowChanged(false);
+        }    
+    }
+
+    double  getMinimum() {return iImg.getMinimum();}
+    double  getMaximum() {return iImg.getMaximum();}    
+
+    
         
     public void zoom(double aFactor, int aX, int aY) {
         iZoom.setToScale(iZoom.getScaleX() + aFactor, iZoom.getScaleY() + aFactor);
@@ -300,10 +185,10 @@ public class JMedImagePane extends JComponent {
      
     public void updateBufferedImage() {
         iBuf = null; ///TODO: get optimized - separate zoom and windowing operations 
-        RenderingHints hts = new RenderingHints(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        RenderingHints hts  = new RenderingHints(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         AffineTransformOp z = new AffineTransformOp(iZoom, hts);
-        BufferedImage src = iWM.transform(iImg.getBufferedImage());
-        BufferedImage dst = z.createCompatibleDestImage(src, iWM.iCMdl);
+        BufferedImage src = iWM.transform(iImg.getBufferedImage(), null);
+        BufferedImage dst = z.createCompatibleDestImage(src, iWM.getComponentColorModel());
         iBuf = z.filter(src, dst);     
     }
     
@@ -334,6 +219,8 @@ public class JMedImagePane extends JComponent {
         
         iController.paint(g); //must paint the last   
     }
+     
+    private static final Logger logger = LogManager.getLogger(JMedImagePane.class);
 }
 
 
