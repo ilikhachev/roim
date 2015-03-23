@@ -308,7 +308,7 @@ public class NewJFrame extends javax.swing.JFrame implements WindowChangeListene
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
         // TODO add your handling code here:
         try {
-            openImage("d:\\images\\pop.dcm");
+            openImage("");//d:\\images\\pop.dcm");
             //openImage("");
         }
         catch (IOException e) {

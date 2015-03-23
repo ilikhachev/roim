@@ -41,12 +41,12 @@ import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.util.NoSuchElementException;
 
-import org.dcm4che3.data.Attributes;
-import org.dcm4che3.image.PaletteColorModel;
-import org.dcm4che3.imageio.plugins.dcm.DicomImageReadParam;
-import org.dcm4che3.imageio.plugins.dcm.DicomImageReaderSpi;
+//import org.dcm4che3.data.Attributes;
+//import org.dcm4che3.image.PaletteColorModel;
+import org.dcm4che2.imageio.plugins.dcm.DicomImageReadParam;
+//import org.dcm4che2.imageio.plugins.dcm.DicomImageReaderSpi;
 
-import org.dcm4che3.io.DicomInputStream;
+//import org.dcm4che3.io.DicomInputStream;
 //import org.dcm4che3.tool.common.CLIUtils;
 //import org.dcm4che3.util.SafeClose;
 //import org.dcm4che3.io.BulkDataDescriptor;
@@ -68,7 +68,7 @@ public class MedImage2D {
             logger.error("It seems there's no DICOM reader available, make try to install one" + e);
             IIORegistry registry = IIORegistry.getDefaultInstance();
             //registry.registerServiceProvider(new org.dcm4che3.imageio.plugins.dcm.DicomImageWriterSpi());
-            registry.registerServiceProvider(new org.dcm4che3.imageio.plugins.dcm.DicomImageReaderSpi());  
+            //registry.registerServiceProvider(new org.dcm4che2.imageio.plugins.dcm.DicomImageReaderSpi());  
             ir = ImageIO.getImageReadersByFormatName("DICOM").next();  
         } finally {
            iReader = ImageIO.getImageReadersByFormatName("DICOM").next(); 
