@@ -14,18 +14,11 @@ import java.awt.geom.AffineTransform;
 import java.awt.Shape;
 import java.awt.Rectangle;
 import java.awt.Cursor;
-import java.awt.image.ComponentColorModel;
-import java.awt.image.DataBuffer;
 
-import java.awt.image.ByteLookupTable;
-import java.awt.image.LookupOp;
-import java.awt.image.AffineTransformOp;
-import java.awt.RenderingHints;
 
 import java.awt.Point;
 import java.awt.geom.Rectangle2D;
 import java.awt.event.*;
-import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 import javax.swing.JPopupMenu;
 import javax.swing.JMenuItem;
@@ -59,9 +52,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     static final int MOUSE_ACTION_MENU   = 200;
     static final int MOUSE_ACTION_ROI    = 500;
 
-    static final double ZOOM_SENSITIVITY_FACTOR = 10.;
-    static final Color ACTIVE_ROI_COLOR = Color.RED;
-
+    
     protected int iLeftAction   = MOUSE_ACTION_PAN;
     protected int iMiddleAction = MOUSE_ACTION_ZOOM;
     protected int iRightAction  = MOUSE_ACTION_WINDOW;
@@ -70,7 +61,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
         RootActionItem(int aX, int aY){super(aX, aY);}
         protected  void DoAction(int aX, int aY){} 
         protected  boolean DoWheel(int aX) {
-            iControlled.zoom(-aX/ZOOM_SENSITIVITY_FACTOR, 0, 0); 
+            iControlled.zoom(-aX/Settings.ZOOM_SENSITIVITY_FACTOR, 0, 0); 
             return true;
         }
 
@@ -87,7 +78,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
                         iControlled.repaint();
                  }}; 
             case MOUSE_ACTION_ZOOM: return new RootActionItem(aX, aY) {public void DoAction(int aX, int aY){
-                                                           iControlled.zoom((aX-iX)/ZOOM_SENSITIVITY_FACTOR, 0, 0);
+                                                           iControlled.zoom((aX-iX)/Settings.ZOOM_SENSITIVITY_FACTOR, 0, 0);
                 }};  
             case MOUSE_ACTION_PAN: 
                 return new RootActionItem(aX, aY) {public void DoAction(int aX, int aY){
@@ -99,12 +90,14 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
             case MOUSE_ACTION_NONE:
             default: return new RootActionItem(aX, aY);      
         }        
-    }   
+    }  
+    
+    private final JMedImagePane iControlled;
     
     private ActionItem iButton;
     //private ActionItem iWheel;  
     private ROI        iSelected;
-    private final JMedImagePane iControlled;
+    
 
     public Controller(JMedImagePane aC) {
         iControlled = aC;
@@ -126,8 +119,11 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     public void mouseExited(MouseEvent e) {
     }
 
-    public void mouseWheelMoved(MouseWheelEvent e) {                         
-        iButton.wheel(e.getWheelRotation());
+    public void mouseWheelMoved(MouseWheelEvent e) {    
+        if (null != iButton)
+            iButton.wheel(e.getWheelRotation());
+        else
+            iControlled.zoom(e.getWheelRotation()/Settings.ZOOM_SENSITIVITY_FACTOR, 0,0);
     }
 
     public void mouseClicked(MouseEvent e) {
@@ -153,9 +149,10 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
             //iControlled.deleteRoi(iSelected);
             iButton = new RootActionItem(e.getX(), e.getY()) {
                 protected void DoAction(int aX, int aY) {
-                    AffineTransform tmp = AffineTransform.getTranslateInstance(aX-iX, aY-iY);
-                    Rectangle2D old = iSelected.iShape.getBounds2D();
-                    iSelected.iShape = tmp.createTransformedShape(iSelected.iShape);
+                    //AffineTransform tmp = AffineTransform.getTranslateInstance(aX-iX, aY-iY);
+                    //Rectangle2D old = iSelected.iShape.getBounds2D();
+                    //iSelected.iShape = tmp.createTransformedShape(iSelected.iShape);
+                    iSelected.Move(aX-iX, aY-iY);
                     iControlled.repaint();//old.createIntersection(iSelected.iShape.getBounds2D())); 
                 }    
               protected boolean DoRelease(int aX, int aY) {
@@ -183,8 +180,12 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     }
 
     public void mouseMoved(MouseEvent e) {   
-        iSelected = iControlled.findRoi(e.getPoint());
-        if (null != iSelected) {
+        
+        ROI r = iControlled.findRoi(e.getPoint());
+                        
+        if (null != r ) { // TODO: cleave in two
+            iSelected = r;
+            if (r.isMovable())            
             iControlled.setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
             // iSelected = tmp;
         } else {
@@ -234,10 +235,10 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
     
 
     public void actionPerformed(ActionEvent e) {
-        logger.info("-->action, " + e.getActionCommand() + " ," + e.paramString() + "\n");
+        logger.info(e.getActionCommand() + " ," + e.paramString());
         switch (e.getActionCommand()) {
             case KCommandRoiRect: 
-                    iButton  = new RootActionItem(-1, -1) {                           
+                iButton = new RootActionItem(-1, -1) {                           
                     Path2D iPath = new Path2D.Double();
                     int first = 0;
                     public void DoAction(int aX, int aY) {
@@ -254,7 +255,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
                             return true;
                         else {
                             iPath.closePath();
-                            iControlled.addRoi(new ROI(iPath));
+                            iControlled.addRoi(new ROI(iPath, null));
                             iControlled.repaint();
                         }
                         return false;
@@ -264,7 +265,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
                     }
                 }; break;
             case KCommandRoiOval:
-                    iButton  = new RootActionItem(-1, -1) {
+                iButton = new RootActionItem(-1, -1) {
 
                     Point.Double iTL = new Point.Double(.0, .0);
                     Point.Double iWH = new Point.Double(.0, .0);
@@ -287,7 +288,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
                         if (null == iTL || null == iWH)
                             return this;
                         else {
-                            iControlled.addRoi(new ROI(new Ellipse2D.Double(iTL.x, iTL.y, iWH.x - iTL.x, iWH.y - iTL.y)));
+                            iControlled.addRoi(new ROI(new Ellipse2D.Double(iTL.x, iTL.y, iWH.x - iTL.x, iWH.y - iTL.y), null));
                             iControlled.repaint();
                         }
                         return null;

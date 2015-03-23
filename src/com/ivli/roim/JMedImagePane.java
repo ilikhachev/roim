@@ -85,13 +85,14 @@ public class JMedImagePane extends JComponent {
     public void addRoi(ROI aR) {
         AffineTransform trans = AffineTransform.getTranslateInstance(iOrigin.x, iOrigin.y); 
         trans.concatenate(iZoom);
+        
         try { 
             trans.invert(); 
         } catch (Exception e){ 
-        //try to do anything useful if u can
+            logger.error(e);
         }
-
-        iRoi.add(aR.createTransformedROI(trans));
+                
+        iRoi.add(ROI.createTransformedRoi(aR, trans));
     }
 
     public void cloneRoi(ROI aR) {
@@ -99,19 +100,24 @@ public class JMedImagePane extends JComponent {
     }
 
     private Rectangle point2shape(Point aP) {
-        Rectangle r = new Rectangle(aP.x, aP.y, 3, 3);
+        
+        final Rectangle r = new Rectangle(aP.x, aP.y, 3, 3);
+        
         AffineTransform trans = AffineTransform.getTranslateInstance(iOrigin.x, iOrigin.y); 
         trans.concatenate(iZoom); 
+        
         try { 
             trans.invert(); 
-        } catch (Exception e){ }
+        } catch (Exception e) {
+            logger.error(e);
+        }
         Shape ret = trans.createTransformedShape(r);
         return ret.getBounds();
     }
 
     ROI findRoi(Point aP) {           
         for (ROI r:iRoi) {
-           if (r.iShape.intersects(point2shape(new Point(aP.x, aP.y)))) 
+            if (r.isSelectable() && r.getShape().intersects(point2shape(new Point(aP.x, aP.y)))) 
                 return r;                        
         }
         return null;
@@ -121,7 +127,7 @@ public class JMedImagePane extends JComponent {
         if (iRoi.remove(aR)) {
             AffineTransform trans = AffineTransform.getTranslateInstance(iOrigin.x, iOrigin.y); 
             trans.concatenate(iZoom);  
-            return aR.createTransformedROI(trans); 
+            return ROI.createTransformedRoi(aR, trans); 
         }
         return null;
     }
@@ -130,7 +136,7 @@ public class JMedImagePane extends JComponent {
               
     public void setWindow (Window aW) {
         if (!iWM.getWindow().equals(aW)) {
-            if (aW.getLevel()  > getMinimum()  && aW.getLevel() < getMaximum()) {
+            if (aW.getLevel() > getMinimum() && aW.getLevel() < getMaximum()) {
 
                 iWM.getWindow().setWindow(aW.getLevel(), aW.getWidth()); 
 
@@ -140,7 +146,7 @@ public class JMedImagePane extends JComponent {
             }
         }
     }
-                /**Git tets **/
+                
     boolean isInverted() {
         return iWM.isInverted();
     }
@@ -198,9 +204,7 @@ public class JMedImagePane extends JComponent {
         
         if (DRAW_OVERLAYS_ON_BUFFERED_IMAGE) {
             Graphics gc = iBuf.createGraphics();
-           // for (ROI r : iRoi) 
-            //    r.drawZoomed((Graphics2D)gc, iOrigin, iZoom.getScaleX(), iZoom.getScaleY());
-         
+          
             gc.dispose();// do i have to
         }       
         
@@ -212,7 +216,7 @@ public class JMedImagePane extends JComponent {
             Color clr = g.getColor();
             for (ROI r : iRoi) {
                 g.setColor(r.getColor());
-                ((Graphics2D)g).draw(r.createTransformedROI(trans).iShape);
+                ((Graphics2D)g).draw(trans.createTransformedShape(r.getShape()));
             }
             g.setColor(clr);
         }

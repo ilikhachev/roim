@@ -10,20 +10,33 @@ import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.io.Serializable;
 
-class ROI implements Serializable {
-    protected Shape  iShape;
-    protected Color  iColor;
-    protected String iAnnotation;
-         
-    ROI (Shape aS, Color aC) {iShape = aS; iColor = aC;}
-    ROI (Shape aS) {iShape = aS; iColor = Colorer.getNextColor(this);}
-    ROI (ROI aR) {iShape = aR.iShape; iColor = aR.iColor; iAnnotation = aR.iAnnotation;}
-       
-    final ROI createTransformedROI(AffineTransform aT) {
-        ROI self = new ROI(aT.createTransformedShape(iShape), iColor);
-        self.iAnnotation = this.iAnnotation;
-        return self;    
-        }
+class ROI extends Overlay implements Serializable {
+    private Shape  iShape;
+    private Color  iColor;
+    private String iAnnotation;
+        
+    ROI(Shape aS, Color aC) {
+        super(true, true); 
+        iShape = aS; 
+        if (null == aC)
+            iColor = Colorer.getNextColor(this);
+        else
+            iColor = aC;
+    }
+          
+    ROI(ROI aR) {super(true, true); iShape = aR.iShape; iColor = aR.iColor; iAnnotation = aR.iAnnotation;}
     
-     public Color  getColor() {return iColor;}
+    public Color getColor() {return iColor;}
+    public Shape getShape() {return iShape;}        
+    
+    void Move(int adX, int adY) {
+        AffineTransform trans = AffineTransform.getTranslateInstance(adX, adY);    
+        iShape = trans.createTransformedShape(iShape);
+    }  
+    
+    static ROI createTransformedRoi(ROI aSrc, AffineTransform aT) {
+        ROI self = new ROI(aT.createTransformedShape(aSrc.iShape), aSrc.iColor);
+        self.iAnnotation = aSrc.iAnnotation;
+        return self;    
+    }
 }

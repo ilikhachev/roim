@@ -14,5 +14,8 @@ import java.awt.Color;
  * @author likhachev
  */
 public class Settings {
-public static final Color ACTIVE_ROI_COLOR=Color.RED;    
+public static final Color  ACTIVE_ROI_COLOR=Color.RED;    
+public static final double ZOOM_SENSITIVITY_FACTOR = 10.;
+//    static final Color ACTIVE_ROI_COLOR = Color.RED;
+
 }

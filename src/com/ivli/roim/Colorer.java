@@ -17,7 +17,7 @@ import java.util.Iterator;
  */
 public class Colorer implements Serializable {
     
-    private static final Color [] iCols = new Color[]{Color.RED, Color.BLACK, Color.BLUE, Color.CYAN, Color.MAGENTA, Color.ORANGE,  Color.PINK, Color.YELLOW};
+    private static final Color [] iCols = new Color[] {Color.RED, Color.BLACK, Color.BLUE, Color.CYAN, Color.MAGENTA, Color.ORANGE,  Color.PINK, Color.YELLOW};
     private static Map <Class, Color> iHash = new HashMap();
     
     static synchronized Color getNextColor(Object aO) {
