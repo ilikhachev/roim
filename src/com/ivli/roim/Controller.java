@@ -248,7 +248,7 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
                         else
                             iPath.lineTo(aX, aY);
                         ++first; 
-                        iControlled.repaint(iPath.getBounds()); 
+                        iControlled.repaint();//iPath.getBounds()); 
                     }
 
                     public boolean DoRelease(int aX, int aY) {

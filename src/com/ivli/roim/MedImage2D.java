@@ -144,6 +144,7 @@ public class MedImage2D {
         double max  = 0; 
         double temp [] = new double [r.getNumBands()];
         double sum = .0;
+        int ll = 0;
         for (int i=0; i<r.getWidth(); ++i)
             for (int j=0; j<r.getHeight(); ++j) {
                 temp = r.getPixel(i, j, temp);
@@ -152,8 +153,11 @@ public class MedImage2D {
                 else if (temp[0] < min) 
                     min = temp[0];
                 sum += temp[0];
+                if (temp[0] > 74.)
+                    ll++;
             }
-
+        
+        logger.info(ll + "- walues exceed 74");
         iMin = min; 
         iMax = max;  
         iIden = sum;
@@ -166,9 +170,10 @@ public class MedImage2D {
         } catch (Exception e) {   
             logger.error(e);                       
         }
+        logger.info("Min=" + iMin + ", Max=" + iMax + ", Den=" + iIden);
     }
     
-   private ImageReadParam readParam() {
+    private ImageReadParam readParam() {
         DicomImageReadParam param =
                 (DicomImageReadParam) iReader.getDefaultReadParam();
         //param.setWindowCenter(windowCenter);
@@ -182,7 +187,4 @@ public class MedImage2D {
         //param.setOverlayGrayscaleValue(overlayGrayscaleValue);
         return param;
     }
-
-  
- 
 }
