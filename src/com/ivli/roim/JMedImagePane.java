@@ -91,10 +91,19 @@ public class JMedImagePane extends JComponent {
         } catch (Exception e){ 
             logger.error(e);
         }
-                
-        iRoi.add(ROI.createTransformedRoi(aR, trans));
+        
+        ROI r = ROI.createTransformedRoi(aR, trans);
+        RoiStats s = iImg.extractRoiStats(r);
+        
+        r.setAnnotation(s);
+        iRoi.add(r);
     }
 
+    public void moveRoi(ROI aR) {
+        RoiStats s = iImg.extractRoiStats(aR);        
+        aR.setAnnotation(s);
+    }
+    
     public void cloneRoi(ROI aR) {
         iRoi.add(new ROI(aR));        
     }
@@ -168,8 +177,6 @@ public class JMedImagePane extends JComponent {
 
     double  getMinimum() {return iImg.getMinimum();}
     double  getMaximum() {return iImg.getMaximum();}    
-
-    
         
     public void zoom(double aFactor, int aX, int aY) {
         iZoom.setToScale(iZoom.getScaleX() + aFactor, iZoom.getScaleY() + aFactor);
@@ -216,7 +223,11 @@ public class JMedImagePane extends JComponent {
             Color clr = g.getColor();
             for (ROI r : iRoi) {
                 g.setColor(r.getColor());
-                ((Graphics2D)g).draw(trans.createTransformedShape(r.getShape()));
+                Shape temp = trans.createTransformedShape(r.getShape());
+                Rectangle bnds = temp.getBounds();
+                ((Graphics2D)g).draw(temp);
+                
+                ((Graphics2D)g).drawString(r.getAnnotation(), bnds.x, bnds.y);
             }
             g.setColor(clr);
         }

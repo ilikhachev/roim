@@ -20,12 +20,15 @@ import javax.imageio.stream.ImageOutputStream;
 import java.util.NoSuchElementException;
 
 import java.awt.image.Raster;
+
 import java.awt.image.ComponentColorModel;
 import java.awt.image.DataBuffer;
 import java.awt.image.BufferedImage;
 import java.awt.image.ByteLookupTable;
 import java.awt.image.LookupOp;
 import java.awt.image.AffineTransformOp;
+import java.awt.Rectangle;
+import java.awt.Point;
 
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.IIOImage;
@@ -44,9 +47,9 @@ import org.dcm4che3.imageio.plugins.dcm.DicomImageReadParam;
 import org.dcm4che3.imageio.plugins.dcm.DicomImageReaderSpi;
 
 import org.dcm4che3.io.DicomInputStream;
-import org.dcm4che3.tool.common.CLIUtils;
-import org.dcm4che3.util.SafeClose;
-import org.dcm4che3.io.BulkDataDescriptor;
+//import org.dcm4che3.tool.common.CLIUtils;
+//import org.dcm4che3.util.SafeClose;
+//import org.dcm4che3.io.BulkDataDescriptor;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.LogManager;
@@ -77,6 +80,7 @@ public class MedImage2D {
     private int    iFrames;
     private double iMin;
     private double iMax;
+    private double iIden;
     private String iFile;
     private BufferedImage iImg;
     
@@ -94,6 +98,38 @@ public class MedImage2D {
     double getMinimum() {return iMin;}
     double getMaximum() {return iMax;}
     
+    RoiStats extractRoiStats(ROI aR) {
+        RoiStats ret = new RoiStats();
+                
+        Raster    src  = iImg.getData();
+        Rectangle bnds = aR.getShape().getBounds();
+        
+        double min  = 65535; 
+        double max  = 0; 
+        double temp [] = new double [src.getNumBands()];
+        double sum = .0;
+        int pix = 0;
+        //int jj = 0;
+        
+        for (int i=bnds.x; i < bnds.x + bnds.width; ++i)
+            for (int j=bnds.y; j < bnds.y + bnds.height; ++j) //{ 
+            if (aR.getShape().contains(i, j)) {
+                ++pix;
+                temp = src.getPixel(i, j, temp);
+                if (temp[0] > max) 
+                    max = temp[0];
+                else if (temp[0] < min) 
+                    min = temp[0];
+                sum += temp[0];
+            }
+        
+        ret.iMin = min;
+        ret.iMax = max;
+        ret.iIden = sum;
+        ret.iPixels = pix;
+        return ret;
+    }
+              
     BufferedImage getBufferedImage() {return iImg;}     
     
     int getNoOfFrames() {return iFrames;}
@@ -101,27 +137,32 @@ public class MedImage2D {
     MedImage2D first() {loadBufferedImage(iIndex = 0); return this; }
     MedImage2D next() {loadBufferedImage(iIndex = Math.min(iFrames-1, iIndex+1)); return this;}
     boolean hasNext() {return iIndex < iFrames - 1;} 
-    
-    private void calculate() {
+       
+    void minimax() {
         Raster r = iImg.getRaster();
         double min  = 65535; 
         double max  = 0; 
         double temp [] = new double [r.getNumBands()];
-
+        double sum = .0;
         for (int i=0; i<r.getWidth(); ++i)
             for (int j=0; j<r.getHeight(); ++j) {
                 temp = r.getPixel(i, j, temp);
-                if (temp[0] > max) max = temp[0];
-                else if (temp[0] < min) min = temp[0];
+                if (temp[0] > max) 
+                    max = temp[0];
+                else if (temp[0] < min) 
+                    min = temp[0];
+                sum += temp[0];
             }
 
-        iMin = min; iMax = max;  
+        iMin = min; 
+        iMax = max;  
+        iIden = sum;
     }
     
     private void loadBufferedImage(int aNdx) {
         try {          
-             iImg = iReader.read(aNdx, readParam());
-             calculate();
+            iImg = iReader.read(aNdx, readParam());
+            minimax();
         } catch (Exception e) {   
             logger.error(e);                       
         }

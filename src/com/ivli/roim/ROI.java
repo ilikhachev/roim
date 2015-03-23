@@ -26,8 +26,14 @@ class ROI extends Overlay implements Serializable {
           
     ROI(ROI aR) {super(true, true); iShape = aR.iShape; iColor = aR.iColor; iAnnotation = aR.iAnnotation;}
     
-    public Color getColor() {return iColor;}
-    public Shape getShape() {return iShape;}        
+    String getAnnotation() {return iAnnotation;}
+    
+    void setAnnotation(RoiStats aS) {
+        iAnnotation = String.format("pix=%d, area=%.1f, min=%.1f, max=%.1f, iden=%.1f", aS.iPixels, aS.iArea, aS.iMin, aS.iMax, aS.iIden);
+    }
+    
+    Color getColor() {return iColor;}
+    Shape getShape() {return iShape;}        
     
     void Move(int adX, int adY) {
         AffineTransform trans = AffineTransform.getTranslateInstance(adX, adY);    
