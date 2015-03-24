@@ -138,13 +138,13 @@ public class MedImage2D {
     MedImage2D next() {loadBufferedImage(iIndex = Math.min(iFrames-1, iIndex+1)); return this;}
     boolean hasNext() {return iIndex < iFrames - 1;} 
        
-    void minimax() {
-        Raster r = iImg.getRaster();
+    void minimax(Raster r) {
+        ///Raster r = iImg.getRaster();
         double min  = 65535; 
         double max  = 0; 
         double temp [] = new double [r.getNumBands()];
         double sum = .0;
-        int ll = 0;
+        
         for (int i=0; i<r.getWidth(); ++i)
             for (int j=0; j<r.getHeight(); ++j) {
                 temp = r.getPixel(i, j, temp);
@@ -153,11 +153,9 @@ public class MedImage2D {
                 else if (temp[0] < min) 
                     min = temp[0];
                 sum += temp[0];
-                if (temp[0] > 74.)
-                    ll++;
+                
             }
         
-        logger.info(ll + "- walues exceed 74");
         iMin = min; 
         iMax = max;  
         iIden = sum;
@@ -165,8 +163,10 @@ public class MedImage2D {
     
     private void loadBufferedImage(int aNdx) {
         try {          
+            //iImg = iReader.read(aNdx, readParam());
+            Raster r = iReader.readRaster(aNdx, readParam());
+            minimax(r);
             iImg = iReader.read(aNdx, readParam());
-            minimax();
         } catch (Exception e) {   
             logger.error(e);                       
         }
