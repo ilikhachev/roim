@@ -56,8 +56,8 @@ public class MedImage2D {
     private double iMax;
     private double iIden;
     private String iFile;
-    private BufferedImage iImg;
-    
+    //private BufferedImage iImg;
+    private Raster iImg;
     //SourceImage (){}
     
     void open(String aFile) throws IOException {      
@@ -75,7 +75,7 @@ public class MedImage2D {
     RoiStats extractRoiStats(ROI aR) {
         RoiStats ret = new RoiStats();
                 
-        Raster    src  = iImg.getData();
+        Raster    src  = iImg;//.getData();
         Rectangle bnds = aR.getShape().getBounds();
         
         double min  = 65535; 
@@ -104,7 +104,7 @@ public class MedImage2D {
         return ret;
     }
               
-    BufferedImage getBufferedImage() {return iImg;}     
+    BufferedImage getBufferedImage() {return convert((WritableRaster)iImg);}     
     
     int getNoOfFrames() {return iFrames;}
     
@@ -138,10 +138,10 @@ public class MedImage2D {
     private void loadBufferedImage(int aNdx) {
         try {          
             //iImg = iReader.read(aNdx, readParam());
-            Raster r = iReader.readRaster(aNdx, readParam());
+            iImg = iReader.readRaster(aNdx, readParam());
            
-            iImg = convert((WritableRaster)r);//iReader.read(aNdx, readParam());
-            minimax(r);
+            //iImg = convert((WritableRaster)r);//iReader.read(aNdx, readParam());
+            minimax(iImg);
             
         } catch (Exception e) {   
             logger.error(e);                       
