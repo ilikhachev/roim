@@ -6,50 +6,24 @@
 package com.ivli.roim;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageOutputStream;
-import java.util.NoSuchElementException;
-
+import java.awt.Transparency;
+import java.awt.color.ColorSpace;
 import java.awt.image.Raster;
-
+import java.awt.image.WritableRaster;
+import java.awt.Rectangle;
 import java.awt.image.ComponentColorModel;
 import java.awt.image.DataBuffer;
 import java.awt.image.BufferedImage;
-import java.awt.image.ByteLookupTable;
-import java.awt.image.LookupOp;
-import java.awt.image.AffineTransformOp;
-import java.awt.Rectangle;
-import java.awt.Point;
-
+import java.awt.image.ColorModel;
 import javax.imageio.spi.IIORegistry;
-import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageOutputStream;
 import java.util.NoSuchElementException;
 
-//import org.dcm4che3.data.Attributes;
-//import org.dcm4che3.image.PaletteColorModel;
 import org.dcm4che2.imageio.plugins.dcm.DicomImageReadParam;
-//import org.dcm4che2.imageio.plugins.dcm.DicomImageReaderSpi;
-
-//import org.dcm4che3.io.DicomInputStream;
-//import org.dcm4che3.tool.common.CLIUtils;
-//import org.dcm4che3.util.SafeClose;
-//import org.dcm4che3.io.BulkDataDescriptor;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.LogManager;
@@ -165,8 +139,10 @@ public class MedImage2D {
         try {          
             //iImg = iReader.read(aNdx, readParam());
             Raster r = iReader.readRaster(aNdx, readParam());
-            minimax(r);
-            iImg = iReader.read(aNdx, readParam());
+           
+            iImg = convert((WritableRaster)r);//iReader.read(aNdx, readParam());
+            minimax(iImg.getRaster());
+            
         } catch (Exception e) {   
             logger.error(e);                       
         }
@@ -178,7 +154,7 @@ public class MedImage2D {
                 (DicomImageReadParam) iReader.getDefaultReadParam();
         //param.setWindowCenter(windowCenter);
         //param.setWindowWidth(windowWidth);
-        //param.setAutoWindowing(autoWindowing);
+        param.setAutoWindowing(false);
         //param.setWindowIndex(windowIndex);
         //param.setVOILUTIndex(voiLUTIndex);
         //param.setPreferWindow(preferWindow);
@@ -187,4 +163,36 @@ public class MedImage2D {
         //param.setOverlayGrayscaleValue(overlayGrayscaleValue);
         return param;
     }
+    
+    
+    private BufferedImage convert(WritableRaster raster) {
+        ColorModel cm;
+       // if (pmi.isMonochrome()) {
+           
+            cm = createColorModel(8, DataBuffer.TYPE_USHORT);//TYPE_BYTE);
+          //  SampleModel sm = createSampleModel(DataBuffer.TYPE_BYTE, false);
+          //  raster = applyLUTs(raster, frameIndex, param, sm, 8);
+          //  for (int i = 0; i < overlayGroupOffsets.length; i++) {
+          //      applyOverlay(overlayGroupOffsets[i], 
+          //              raster, frameIndex, param, 8, overlayData[i]);
+       //     }
+      //  } else {
+      //      cm = createColorModel(bitsStored, dataType);
+      //  }
+        //WritableRaster r = raster.createCompatibleWritableRaster();
+        return new BufferedImage(cm, raster , false, null);
+    }
+    
+    static ColorModel createColorModel(int bits, int dataType) {
+        return new ComponentColorModel(
+                ColorSpace.getInstance(ColorSpace.CS_GRAY),
+                new int[] { bits },
+                false, // hasAlpha
+                false, // isAlphaPremultiplied
+                Transparency.OPAQUE,
+                dataType);
+    }
+
+
+
 }

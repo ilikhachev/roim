@@ -82,10 +82,28 @@ class  VOILut implements LUTTransform {
         iLok  = new LookupOp(new ByteLookupTable(0, iBuffer.bytes), null);	
     }
 
-    private final void makeLinear() {  	
+    private final void makeLinear() {  
+        final double m = 255 / iWin.getWidth();
+        final double b = -m*iWin.getBottom();
+        final byte max = (byte)(isInverted() ? 0x00:0xff);
+        final byte min = (byte)(isInverted() ? 0xff:0x00);
         
-       // LutBuffer lut = new LutBuffer(iImg.getBufferedImage().getSampleModel().getDataType(), iImg.isSigned()); 
+        for (int x=0; x < iBuffer.length; ++x) {
+            
+            //final double y = iPVt.transform(x)*m+b;
+            
+            if (x <= iWin.getBottom()) 
+                iBuffer.bytes[x] = 0;
+            else if (x > iWin.getTop()) 
+                iBuffer.bytes[x] = (byte)255;
+            else
+                iBuffer.bytes[x] = (byte)(x*m+b);
+        }
 
+        iLok = new LookupOp(new ByteLookupTable(0, iBuffer.bytes), null);
+    }
+    
+    private final void makeLinear2() {  	
         for (int i = 0; i < iBuffer.length; ++i) {
             double y = iPVt.transform(i-iBuffer.min);
 
