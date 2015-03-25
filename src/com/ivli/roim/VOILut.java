@@ -81,23 +81,26 @@ class  VOILut implements LUTTransform {
 
         iLok  = new LookupOp(new ByteLookupTable(0, iBuffer.bytes), null);	
     }
-
+    
+    private static final int GREYSCALES = 255;
+    private static final int GREYSCALES_MAX = 255;
+    private static final int GREYSCALES_MIN = 0;
+    
     private final void makeLinear() {  
-        final double m = 255 / iWin.getWidth();
-        final double b = -m*iWin.getBottom();
-        final byte max = (byte)(isInverted() ? 0x00:0xff);
-        final byte min = (byte)(isInverted() ? 0xff:0x00);
+        final double m = GREYSCALES / iWin.getWidth();
+        final double b = m*iWin.getBottom();
+        final byte max = (byte)(isInverted() ? GREYSCALES_MIN:GREYSCALES_MAX);
+        final byte min = (byte)(isInverted() ? GREYSCALES_MAX:GREYSCALES_MIN);
         
         for (int x=0; x < iBuffer.length; ++x) {
-            
-            //final double y = iPVt.transform(x)*m+b;
-            
             if (x <= iWin.getBottom()) 
-                iBuffer.bytes[x] = 0;
+                iBuffer.bytes[x] = min;
             else if (x > iWin.getTop()) 
-                iBuffer.bytes[x] = (byte)255;
-            else
-                iBuffer.bytes[x] = (byte)(x*m+b);
+                iBuffer.bytes[x] = max;
+            else {
+                final double y = m * iPVt.transform(x) - b;
+                iBuffer.bytes[x] = (byte) (isInverted()? max - y : y);
+            }
         }
 
         iLok = new LookupOp(new ByteLookupTable(0, iBuffer.bytes), null);

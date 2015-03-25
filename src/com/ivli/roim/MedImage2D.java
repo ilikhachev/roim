@@ -141,7 +141,7 @@ public class MedImage2D {
             Raster r = iReader.readRaster(aNdx, readParam());
            
             iImg = convert((WritableRaster)r);//iReader.read(aNdx, readParam());
-            minimax(iImg.getRaster());
+            minimax(r);
             
         } catch (Exception e) {   
             logger.error(e);                       
