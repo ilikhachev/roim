@@ -149,11 +149,8 @@ class Controller implements KeyListener, MouseListener, MouseMotionListener, Mou
             //iControlled.deleteRoi(iSelected);
             iButton = new RootActionItem(e.getX(), e.getY()) {
                 protected void DoAction(int aX, int aY) {
-                    //AffineTransform tmp = AffineTransform.getTranslateInstance(aX-iX, aY-iY);
-                    //Rectangle2D old = iSelected.iShape.getBounds2D();
-                    //iSelected.iShape = tmp.createTransformedShape(iSelected.iShape);
-                    iSelected.Move(aX-iX, aY-iY);
-                    iControlled.moveRoi(iSelected);
+                    
+                    iControlled.moveRoi(iSelected, aX-iX, aY-iY);
                     iControlled.repaint();//old.createIntersection(iSelected.iShape.getBounds2D())); 
                 }    
               protected boolean DoRelease(int aX, int aY) {

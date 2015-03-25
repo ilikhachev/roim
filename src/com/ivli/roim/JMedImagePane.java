@@ -52,6 +52,8 @@ public class JMedImagePane extends JComponent {
     private BufferedImage    iBuf;
     private final HashSet<WindowChangeListener> iWinListeners = new HashSet();    
         
+    
+    
     public JMedImagePane(String aFileName) throws IOException {
         iImg = new MedImage2D();      
         iImg.open(aFileName);
@@ -67,6 +69,9 @@ public class JMedImagePane extends JComponent {
         iController = new Controller(this);            
     }
 //TODO: it's only temporary hook
+    
+    AffineTransform getZoom() {return iZoom;}
+    
     public BufferedImage transform(BufferedImage aI) {
         return iWM.transform(aI, null);
     }
@@ -99,7 +104,9 @@ public class JMedImagePane extends JComponent {
         iRoi.add(r);
     }
 
-    public void moveRoi(ROI aR) {
+    public void moveRoi(ROI aR, double adX, double adY) {            
+        //AffineTransform tmp = AffineTransform.getTranslateInstance(adX/iZoom.getScaleX(), adY/iZoom.getScaleY());
+        aR.move((adX/iZoom.getScaleX()), (adY/iZoom.getScaleY()));
         RoiStats s = iImg.extractRoiStats(aR);        
         aR.setAnnotation(s);
     }

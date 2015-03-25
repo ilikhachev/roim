@@ -71,9 +71,7 @@ class  VOILut implements LUTTransform {
     private static final double LUT_RANGE = LUT_MAX - LUT_MIN;
 
     private final void makeLogarithmic() {   
-        
-       // LutBuffer lut = new LutBuffer(iImg.getBufferedImage().getSampleModel().getDataType(), iImg.isSigned());  
-
+       
         for (int i = 0; i < iBuffer.length; ++i) {
             double y = Ranger.range(LUT_RANGE / (1 + Math.exp(-4*(iPVt.transform(iBuffer.min + i) - iWin.getLevel())/iWin.getWidth())) + LUT_MIN + 0.5, LUT_MIN, LUT_MAX);
             iBuffer.bytes[i]=(byte)(isInverted() ? (LUT_MAX - y) : y);
@@ -135,7 +133,7 @@ class  VOILut implements LUTTransform {
     public BufferedImage transform(BufferedImage aSrc, BufferedImage aDst) {
         if (null == iLok)
             makeLUT();
-        return iLok.filter(aSrc, null == aDst ? iLok.createCompatibleDestImage(aSrc, iCMdl):aDst);	
+        return iLok.filter(aSrc, null);//null == aDst ? iLok.createCompatibleDestImage(aSrc, iCMdl):aDst);	
     }
     
     private static final Logger logger = LogManager.getLogger(VOILut.class);

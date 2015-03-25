@@ -35,11 +35,15 @@ class ROI extends Overlay implements Serializable {
     Color getColor() {return iColor;}
     Shape getShape() {return iShape;}        
     
-    void Move(int adX, int adY) {
+    void move(double adX, double adY) {
         AffineTransform trans = AffineTransform.getTranslateInstance(adX, adY);    
         iShape = trans.createTransformedShape(iShape);
     }  
     
+    //void move(AffineTransform aT) {
+       // AffineTransform trans = AffineTransform.getTranslateInstance(adX, adY);    
+      //  iShape = aT.createTransformedShape(iShape);
+    //}  
     static ROI createTransformedRoi(ROI aSrc, AffineTransform aT) {
         ROI self = new ROI(aT.createTransformedShape(aSrc.iShape), aSrc.iColor);
         self.iAnnotation = aSrc.iAnnotation;

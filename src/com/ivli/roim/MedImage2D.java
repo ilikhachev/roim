@@ -83,8 +83,7 @@ public class MedImage2D {
         double temp [] = new double [src.getNumBands()];
         double sum = .0;
         int pix = 0;
-        //int jj = 0;
-        
+                
         for (int i=bnds.x; i < bnds.x + bnds.width; ++i)
             for (int j=bnds.y; j < bnds.y + bnds.height; ++j) //{ 
             if (aR.getShape().contains(i, j)) {

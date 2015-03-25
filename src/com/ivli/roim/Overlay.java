@@ -21,13 +21,14 @@ public abstract class Overlay {
     boolean isSelectable(){return iSelectable;}
     boolean isMovable(){return iMovable;}
     
-    void Select(boolean aS) {
+    void select(boolean aS) {
         assert(iSelected == true);
         iSelected = aS;
     }
     boolean isSelected() {return iSelected;}
     
-    abstract void Move(int adX, int adY);           
+    abstract void move(double adX, double adY); 
+    
     //boolean intersects(Rectangle2D aD)
     abstract Shape getShape();
 }
