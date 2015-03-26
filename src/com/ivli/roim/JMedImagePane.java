@@ -98,7 +98,7 @@ public class JMedImagePane extends JComponent {
         }
         
         ROI r = ROI.createTransformedRoi(aR, trans);
-        RoiStats s = iImg.extractRoiStats(r);
+        RoiStats s = iImg.calcRoiStats(r);
         
         r.setAnnotation(s);
         iRoi.add(r);
@@ -107,7 +107,7 @@ public class JMedImagePane extends JComponent {
     public void moveRoi(ROI aR, double adX, double adY) {            
         //AffineTransform tmp = AffineTransform.getTranslateInstance(adX/iZoom.getScaleX(), adY/iZoom.getScaleY());
         aR.move((adX/iZoom.getScaleX()), (adY/iZoom.getScaleY()));
-        RoiStats s = iImg.extractRoiStats(aR);        
+        RoiStats s = iImg.calcRoiStats(aR);        
         aR.setAnnotation(s);
     }
     

@@ -16,6 +16,8 @@ import java.awt.image.ComponentColorModel;
 import java.awt.image.DataBuffer;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
+import java.awt.image.ConvolveOp;
+import java.awt.image.Kernel;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
@@ -56,9 +58,9 @@ public class MedImage2D {
     private double iMax;
     private double iIden;
     private String iFile;
-    //private BufferedImage iImg;
+    
     private Raster iImg;
-    //SourceImage (){}
+    
     
     void open(String aFile) throws IOException {      
         //DicomInputStream is = new DicomInputStream(new FileInputStream(new File(aFile)));
@@ -72,47 +74,30 @@ public class MedImage2D {
     double getMinimum() {return iMin;}
     double getMaximum() {return iMax;}
     
-    RoiStats extractRoiStats(ROI aR) {
-        RoiStats ret = new RoiStats();
-                
-        Raster    src  = iImg;//.getData();
-        Rectangle bnds = aR.getShape().getBounds();
         
-        double min  = 65535; 
-        double max  = 0; 
-        double temp [] = new double [src.getNumBands()];
-        double sum = .0;
-        int pix = 0;
-                
-        for (int i=bnds.x; i < bnds.x + bnds.width; ++i)
-            for (int j=bnds.y; j < bnds.y + bnds.height; ++j) //{ 
-            if (aR.getShape().contains(i, j)) {
-                ++pix;
-                temp = src.getPixel(i, j, temp);
-                if (temp[0] > max) 
-                    max = temp[0];
-                else if (temp[0] < min) 
-                    min = temp[0];
-                sum += temp[0];
-            }
+    WritableRaster filter(Raster aR) {
+        final float[] emboss = new float[] { -2,0,0,   0,1,0,   0,0,2 };
+        final float[] blurring = new float[] { 1f/9f,1f/9f,1f/9f, 1f/9f,1f/9f,1f/9f, 1f/9f,1f/9f,1f/9f };
+        final float[] sharpening = new float[] { -1,-1,-1,   -1,9,-1,   -1,-1,-1 };
         
-        ret.iMin = min;
-        ret.iMax = max;
-        ret.iIden = sum;
-        ret.iPixels = pix;
-        return ret;
+        Kernel kernel = new Kernel(3, 3, emboss);
+        ConvolveOp op = new ConvolveOp(kernel);
+        return op.filter(aR, null);
     }
-              
-    BufferedImage getBufferedImage() {return convert((WritableRaster)iImg);}     
+    
+    BufferedImage getBufferedImage() {
+        return convert((WritableRaster)iImg);
+    }     
     
     int getNoOfFrames() {return iFrames;}
     
-    MedImage2D first() {loadBufferedImage(iIndex = 0); return this; }
-    MedImage2D next() {loadBufferedImage(iIndex = Math.min(iFrames-1, iIndex+1)); return this;}
+    void first() {loadFrame(iIndex = 0);}
+    void next() {loadFrame(iIndex = Math.min(iFrames-1, iIndex+1));}
     boolean hasNext() {return iIndex < iFrames - 1;} 
-       
-    void minimax(Raster r) {
-        ///Raster r = iImg.getRaster();
+    
+    /*
+    void calculateStats(Raster r) {
+        
         double min  = 65535; 
         double max  = 0; 
         double temp [] = new double [r.getNumBands()];
@@ -133,14 +118,15 @@ public class MedImage2D {
         iMax = max;  
         iIden = sum;
     }
-    
-    private void loadBufferedImage(int aNdx) {
+    */
+               
+    private void loadFrame(int aNdx) {
         try {          
-            //iImg = iReader.read(aNdx, readParam());
             iImg = iReader.readRaster(aNdx, readParam());
-           
-            //iImg = convert((WritableRaster)r);//iReader.read(aNdx, readParam());
-            minimax(iImg);
+            final RoiStats stats = calcRoiStats(new ROI(iImg.getBounds(), null));
+            iMin = stats.iMin; 
+            iMax = stats.iMax;  
+            iIden = stats.iIden;
             
         } catch (Exception e) {   
             logger.error(e);                       
@@ -191,7 +177,36 @@ public class MedImage2D {
                 Transparency.OPAQUE,
                 dataType);
     }
-
-
+    
+    RoiStats calcRoiStats(ROI aR) {
+        RoiStats ret = new RoiStats();
+                
+        Raster    src  = iImg;//.getData();
+        Rectangle bnds = aR.getShape().getBounds();
+        
+        double min  = 65535; 
+        double max  = 0; 
+        double temp [] = new double [src.getNumBands()];
+        double sum = .0;
+        int pix = 0;
+                
+        for (int i=bnds.x; i < (bnds.x + bnds.width); ++i)
+            for (int j=bnds.y; j < (bnds.y + bnds.height); ++j) //{ 
+            if (aR.getShape().contains(i, j)) {
+                ++pix;
+                temp = src.getPixel(i, j, temp);
+                if (temp[0] > max) 
+                    max = temp[0];
+                else if (temp[0] < min) 
+                    min = temp[0];
+                sum += temp[0];
+            }
+        
+        ret.iMin = min;
+        ret.iMax = max;
+        ret.iIden = sum;
+        ret.iPixels = pix;
+        return ret;
+    }
 
 }
