@@ -8,7 +8,10 @@ import java.awt.color.ColorSpace;
 import java.awt.Color;
 import java.awt.geom.AffineTransform;
 import java.awt.Shape;
-import java.awt.image.ComponentColorModel;
+import java.awt.image.ColorModel;
+import java.awt.image.WritableRaster;
+
+import java.awt.image.IndexColorModel;
 import java.awt.image.DataBuffer;
 import java.awt.image.BufferedImage;
 import java.awt.image.ByteLookupTable;
@@ -203,13 +206,31 @@ public class JMedImagePane extends JComponent {
         updateBufferedImage();
     }
      
+   static final BufferedImage createIndexedCopy(BufferedImage orig, IndexColorModel cm) {
+      int w = orig.getWidth(null);
+      int h = orig.getHeight(null);
+      BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_INDEXED, cm);
+      Graphics2D g2d = out.createGraphics();
+      //g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+      g2d.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+     // g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+      g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+      ///LookupOp
+      g2d.drawImage(orig, 0, 0, w, h, null);
+      g2d.dispose();
+      return out;
+   }
+
     public void updateBufferedImage() {
         iBuf = null; ///TODO: get optimized - separate zoom and windowing operations 
         RenderingHints hts  = new RenderingHints(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         AffineTransformOp z = new AffineTransformOp(iZoom, hts);
         BufferedImage src = iWM.transform(iImg.getBufferedImage(), null);
-        BufferedImage dst = z.createCompatibleDestImage(src, iWM.getComponentColorModel());
-        iBuf = z.filter(src, dst);     
+        //ColorModel mdl = LutLoader.open("") ;
+        
+        BufferedImage dst = z.filter(src, null);
+        
+        iBuf = createIndexedCopy(dst, LutLoader.open("fire"));      
     }
     
     public void paintComponent(Graphics g) {           

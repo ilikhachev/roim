@@ -79,6 +79,7 @@ public class LutPanel extends JComponent implements WindowChangeListener {
         //AffineTransformOp z = new AffineTransformOp(trans, null);
         BufferedImage temp = iPanel.transform(iBuf);
         //BufferedImage temp2 = z.createCompatibleDestImage(temp, iCm);
-        g.drawImage(temp, 0, 0, getWidth(), getHeight(), null);
+        BufferedImage temp2 = iPanel.createIndexedCopy(temp, LutLoader.open("fire"));
+        g.drawImage(temp2, 0, 0, getWidth(), getHeight(), null);
     }
 }

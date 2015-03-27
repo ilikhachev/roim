@@ -7,6 +7,7 @@ package com.ivli.roim;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Vector;
 import java.awt.Transparency;
 import java.awt.color.ColorSpace;
 import java.awt.image.Raster;
@@ -58,6 +59,25 @@ public class MedImage2D {
     private double iMax;
     private double iIden;
     private String iFile;
+    
+    
+    private class StackableImage {
+        int iIndex;
+        
+        class Stats {
+            double iMin;
+            double iMax;
+            double iIden;
+        } 
+        
+        Stats  iStats;
+        Raster iRaster;
+    }
+    
+    class ImageStack {
+        Vector<StackableImage> iImages;
+        
+    }
     
     private Raster iImg;
     
@@ -151,7 +171,7 @@ public class MedImage2D {
     
     
     private BufferedImage convert(WritableRaster raster) {
-        ColorModel cm;
+        ColorModel cm ;
        // if (pmi.isMonochrome()) {
            
             cm = createColorModel(8, DataBuffer.TYPE_USHORT);//TYPE_BYTE);
@@ -181,31 +201,32 @@ public class MedImage2D {
     RoiStats calcRoiStats(ROI aR) {
         RoiStats ret = new RoiStats();
                 
-        Raster    src  = iImg;//.getData();
-        Rectangle bnds = aR.getShape().getBounds();
+        //Raster    src  = iImg;//.getData();
+        final Rectangle bnds = aR.getShape().getBounds();
         
         double min  = 65535; 
         double max  = 0; 
-        double temp [] = new double [src.getNumBands()];
+        double temp [] = new double [iImg.getNumBands()];
         double sum = .0;
         int pix = 0;
                 
         for (int i=bnds.x; i < (bnds.x + bnds.width); ++i)
             for (int j=bnds.y; j < (bnds.y + bnds.height); ++j) //{ 
-            if (aR.getShape().contains(i, j)) {
-                ++pix;
-                temp = src.getPixel(i, j, temp);
-                if (temp[0] > max) 
-                    max = temp[0];
-                else if (temp[0] < min) 
-                    min = temp[0];
-                sum += temp[0];
-            }
+                if (aR.getShape().contains(i, j)) {
+                    ++pix;
+                    temp = iImg.getPixel(i, j, temp);
+                    if (temp[0] > max) 
+                        max = temp[0];
+                    else if (temp[0] < min) 
+                        min = temp[0];
+                    sum += temp[0];
+                }
         
         ret.iMin = min;
         ret.iMax = max;
         ret.iIden = sum;
         ret.iPixels = pix;
+        ret.iBounds = bnds.getWidth() * bnds.getHeight();
         return ret;
     }
 

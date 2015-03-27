@@ -29,7 +29,7 @@ class ROI extends Overlay implements Serializable {
     String getAnnotation() {return iAnnotation;}
     
     void setAnnotation(RoiStats aS) {
-        iAnnotation = String.format("pix=%d, area=%.1f, min=%.1f, max=%.1f, iden=%.1f", aS.iPixels, aS.iArea, aS.iMin, aS.iMax, aS.iIden);
+        iAnnotation = String.format("pix=%d, pixels=%.1f, area=%.1f, min=%.1f, max=%.1f, iden=%.1f", aS.iPixels, aS.iBounds, aS.iArea, aS.iMin, aS.iMax, aS.iIden);
     }
     
     Color getColor() {return iColor;}
@@ -39,11 +39,7 @@ class ROI extends Overlay implements Serializable {
         AffineTransform trans = AffineTransform.getTranslateInstance(adX, adY);    
         iShape = trans.createTransformedShape(iShape);
     }  
-    
-    //void move(AffineTransform aT) {
-       // AffineTransform trans = AffineTransform.getTranslateInstance(adX, adY);    
-      //  iShape = aT.createTransformedShape(iShape);
-    //}  
+        
     static ROI createTransformedRoi(ROI aSrc, AffineTransform aT) {
         ROI self = new ROI(aT.createTransformedShape(aSrc.iShape), aSrc.iColor);
         self.iAnnotation = aSrc.iAnnotation;

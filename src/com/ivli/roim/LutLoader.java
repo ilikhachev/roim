@@ -63,7 +63,7 @@ public class LutLoader {// extends ImagePlus implements PlugIn {
 		
                 if (nColors>0) {
 			if (nColors<256)
-				extrapolate(reds, greens, blues, nColors);
+				nColors = extrapolate(reds, greens, blues, nColors);
 			
 			return new IndexColorModel(8, nColors, reds, greens, blues);
 		}

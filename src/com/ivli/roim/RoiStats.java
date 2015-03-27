@@ -11,9 +11,11 @@ package com.ivli.roim;
  */
 public class RoiStats {
     int iPixels;  //number of pixels
+    double iBounds;  //area of bounding rectangle in pixels
     double iArea; //area in cm2
     double iMin;  //min value 
     double iMax;  //max value
     double iIden; //integral density (sum of pixels)
+    
     
 }
