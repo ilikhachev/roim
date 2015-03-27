@@ -60,14 +60,14 @@ public class JMedImagePane extends JComponent {
     public JMedImagePane(String aFileName) throws IOException {
         iImg = new MedImage2D();      
         iImg.open(aFileName);
-        iImg.first();  
+        iImg.seek(5);  
         iWM = new VOILut(iImg);
         iController = new Controller(this);
     }
 
     public JMedImagePane(MedImage2D anImg) {
         iImg = anImg;
-        iImg.first();   
+        iImg.seek(0);   
         iWM = new VOILut(iImg);
         iController = new Controller(this);            
     }
@@ -187,7 +187,14 @@ public class JMedImagePane extends JComponent {
 
     double  getMinimum() {return iImg.getMinimum();}
     double  getMaximum() {return iImg.getMaximum();}    
-        
+    
+    int  getFrames() {return iImg.getFrames();}    
+    
+    void loadFrame(int aN) {
+        iImg.seek(aN);
+        updateBufferedImage();
+    }
+    
     public void zoom(double aFactor, int aX, int aY) {
         iZoom.setToScale(iZoom.getScaleX() + aFactor, iZoom.getScaleY() + aFactor);
         updateBufferedImage();
@@ -230,7 +237,7 @@ public class JMedImagePane extends JComponent {
         
         BufferedImage dst = z.filter(src, null);
         
-        iBuf = createIndexedCopy(dst, LutLoader.open("fire"));      
+        iBuf = dst;//createIndexedCopy(dst, LutLoader.open("fire"));      
     }
     
     public void paintComponent(Graphics g) {           

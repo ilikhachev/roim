@@ -69,16 +69,14 @@ public class MedImage2D {
     private class StackableImage {
         Stats  iStats = new Stats();
         Raster iRaster;
-    }
+    }    
+
+    Stats iStats;  //global statistics out of DICOM
+    Vector<StackableImage> iImg;
     
+    int getFrames() {return iFrames;}
     
-        Stats iStats;  //global statistics out of DICOM
-        Vector<StackableImage> iImg;
-    
-  
-    private Raster getFrame() {
-        return iImg.get(iIndex).iRaster;
-    }
+    private Raster getFrame() {return iImg.get(iIndex).iRaster;}
     
     void open(String aFile) throws IOException {      
         //DicomInputStream is = new DicomInputStream(new FileInputStream(new File(aFile)));
@@ -86,13 +84,18 @@ public class MedImage2D {
         iReader.setInput(iis);     
         iFrames = iReader.getNumImages(false);
         logger.info("-->Number of frames = " + iFrames);
+        
+        for (int i=0; i < iFrames; ++i)
+            seek(i);
+        
+       // seek(5);
+        
     }
     
     boolean isSigned() {return false;} ///TODO
     double getMinimum() {return iStats.iMin;}
     double getMaximum() {return iStats.iMax;}
-    
-        
+            
     WritableRaster filter(Raster aR) {
         final float[] emboss = new float[] { -2,0,0,   0,1,0,   0,0,2 };
         final float[] blurring = new float[] { 1f/9f,1f/9f,1f/9f, 1f/9f,1f/9f,1f/9f, 1f/9f,1f/9f,1f/9f };
@@ -109,8 +112,17 @@ public class MedImage2D {
     
     int getNoOfFrames() {return iFrames;}
     
-    void first() {loadFrame(iIndex = 0);}
-    void next() {loadFrame(iIndex = Math.min(iFrames-1, iIndex+1));}
+    //void first() {loadFrame(iIndex = 0);}
+    //void next() {loadFrame(iIndex = Math.min(iFrames-1, iIndex+1));}
+    
+    void seek(int aIndex) {
+        try{
+            loadFrame(aIndex);
+        } catch (IOException | NoSuchElementException ex) {
+            logger.error(ex);
+        } 
+    }
+    
     boolean hasNext() {return iIndex < iFrames - 1;} 
     
     /*
@@ -138,12 +150,15 @@ public class MedImage2D {
     }
     */
                
-    private void loadFrame(int aNdx) {
-        try {
+    private void loadFrame(int aNdx) throws IOException, NoSuchElementException {
+        //try {
             if (null == iImg)
                 iImg = new Vector(1, 1);
             
-            if (aNdx >= iImg.size()) {
+            if (aNdx > iFrames)
+                throw new NoSuchElementException();
+            
+            if (aNdx >= iImg.size() || null == iImg.elementAt(aNdx)) {
                 StackableImage r = new StackableImage();
                 r.iRaster = iReader.readRaster(iIndex = aNdx, readParam());
 
@@ -158,13 +173,13 @@ public class MedImage2D {
             } else {
                 iIndex = aNdx;
             }
-        } catch (Exception e) {   
-            logger.error(e);                       
-        }
+       // } catch (Exception e) {   
+       //     logger.error(e);                       
+       // }
         
         iStats = iImg.get(iIndex).iStats;
         
-        logger.info("Min=" + iImg.get(iIndex).iStats.iMin + ", Max=" + iImg.get(iIndex).iStats.iMax + ", Den=" + iImg.get(iIndex).iStats.iIden);
+        logger.info("Loaded " +iIndex+", Min=" + iImg.get(iIndex).iStats.iMin + ", Max=" + iImg.get(iIndex).iStats.iMax + ", Den=" + iImg.get(iIndex).iStats.iIden);
     }
     
     private ImageReadParam readParam() {
@@ -181,7 +196,6 @@ public class MedImage2D {
         //param.setOverlayGrayscaleValue(overlayGrayscaleValue);
         return param;
     }
-    
     
     private BufferedImage convert(WritableRaster raster) {
         ColorModel cm ;
