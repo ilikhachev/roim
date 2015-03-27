@@ -62,8 +62,7 @@ public class MedImage2D {
     
     
     private class StackableImage {
-        int iIndex;
-        
+       
         class Stats {
             double iMin;
             double iMax;
