@@ -55,31 +55,30 @@ public class MedImage2D {
     private static final ImageReader iReader;// = ImageIO.getImageReadersByFormatName("DICOM").next();
     private int    iIndex;
     private int    iFrames;
-    private double iMin;
-    private double iMax;
-    private double iIden;
+    //private double iMin;
+    //private double iMax;
+    //private double iIden;
     private String iFile;
     
+    class Stats {
+        double iMin;
+        double iMax;
+        double iIden;
+    } 
     
     private class StackableImage {
-       
-        class Stats {
-            double iMin;
-            double iMax;
-            double iIden;
-        } 
-        
-        Stats  iStats;
+        Stats  iStats = new Stats();
         Raster iRaster;
     }
     
-    class ImageStack {
-        Vector<StackableImage> iImages;
-        
+    
+        Stats iStats;  //global statistics out of DICOM
+        Vector<StackableImage> iImg;
+    
+  
+    private Raster getFrame() {
+        return iImg.get(iIndex).iRaster;
     }
-    
-    private Raster iImg;
-    
     
     void open(String aFile) throws IOException {      
         //DicomInputStream is = new DicomInputStream(new FileInputStream(new File(aFile)));
@@ -90,8 +89,8 @@ public class MedImage2D {
     }
     
     boolean isSigned() {return false;} ///TODO
-    double getMinimum() {return iMin;}
-    double getMaximum() {return iMax;}
+    double getMinimum() {return iStats.iMin;}
+    double getMaximum() {return iStats.iMax;}
     
         
     WritableRaster filter(Raster aR) {
@@ -105,7 +104,7 @@ public class MedImage2D {
     }
     
     BufferedImage getBufferedImage() {
-        return convert((WritableRaster)iImg);
+        return convert((WritableRaster)iImg.elementAt(iIndex).iRaster);
     }     
     
     int getNoOfFrames() {return iFrames;}
@@ -140,17 +139,32 @@ public class MedImage2D {
     */
                
     private void loadFrame(int aNdx) {
-        try {          
-            iImg = iReader.readRaster(aNdx, readParam());
-            final RoiStats stats = calcRoiStats(new ROI(iImg.getBounds(), null));
-            iMin = stats.iMin; 
-            iMax = stats.iMax;  
-            iIden = stats.iIden;
+        try {
+            if (null == iImg)
+                iImg = new Vector(1, 1);
             
+            if (aNdx >= iImg.size()) {
+                StackableImage r = new StackableImage();
+                r.iRaster = iReader.readRaster(iIndex = aNdx, readParam());
+
+                final RoiStats stats = calcRoiStats(new ROI(r.iRaster.getBounds(), null), r.iRaster);
+                r.iStats.iMin = stats.iMin; 
+                r.iStats.iMax = stats.iMax;  
+                r.iStats.iIden = stats.iIden;
+                
+                iImg.setSize(iIndex + 1);
+                iImg.setElementAt(r, iIndex);
+                logger.info("Frame -"+iIndex+" loaded");
+            } else {
+                iIndex = aNdx;
+            }
         } catch (Exception e) {   
             logger.error(e);                       
         }
-        logger.info("Min=" + iMin + ", Max=" + iMax + ", Den=" + iIden);
+        
+        iStats = iImg.get(iIndex).iStats;
+        
+        logger.info("Min=" + iImg.get(iIndex).iStats.iMin + ", Max=" + iImg.get(iIndex).iStats.iMax + ", Den=" + iImg.get(iIndex).iStats.iIden);
     }
     
     private ImageReadParam readParam() {
@@ -198,22 +212,27 @@ public class MedImage2D {
     }
     
     RoiStats calcRoiStats(ROI aR) {
+        final Raster r = iImg.get(iIndex).iRaster;
+        return calcRoiStats(aR, r);
+    }
+            
+    private RoiStats calcRoiStats(ROI aRoi, Raster aRaster) {
         RoiStats ret = new RoiStats();
                 
         //Raster    src  = iImg;//.getData();
-        final Rectangle bnds = aR.getShape().getBounds();
+        final Rectangle bnds = aRoi.getShape().getBounds();
         
         double min  = 65535; 
         double max  = 0; 
-        double temp [] = new double [iImg.getNumBands()];
+        double temp [] = new double [aRaster.getNumBands()];
         double sum = .0;
         int pix = 0;
                 
         for (int i=bnds.x; i < (bnds.x + bnds.width); ++i)
             for (int j=bnds.y; j < (bnds.y + bnds.height); ++j) //{ 
-                if (aR.getShape().contains(i, j)) {
+                if (aRoi.getShape().contains(i, j)) {
                     ++pix;
-                    temp = iImg.getPixel(i, j, temp);
+                    temp = aRaster.getPixel(i, j, temp);
                     if (temp[0] > max) 
                         max = temp[0];
                     else if (temp[0] < min) 
